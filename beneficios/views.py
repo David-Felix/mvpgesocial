@@ -90,11 +90,17 @@ def dashboard(request):
 def pessoa_create(request):
     """Criar nova pessoa"""
     if request.method == 'POST':
-        form = PessoaForm(request.POST)
+        form = PessoaForm(request.POST, request.FILES)
         if form.is_valid():
             pessoa = form.save()
+            
+            # Salvar documento se enviado
+            arquivo = form.cleaned_data.get('arquivo')
+            if arquivo:
+                Documento.objects.create(pessoa=pessoa, arquivo=arquivo)
+            
             messages.success(request, f'Pessoa {pessoa.nome_completo} cadastrada com sucesso!')
-            return redirect('pessoa_documento', pk=pessoa.pk)
+            return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     else:
         form = PessoaForm()
     
@@ -105,15 +111,29 @@ def pessoa_create(request):
     }
     return render(request, 'beneficios/pessoa_form.html', context)
 
+
 @login_required
 def pessoa_edit(request, pk):
     """Editar pessoa existente"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
+    documento_atual = getattr(pessoa, 'documento', None)
     
     if request.method == 'POST':
-        form = PessoaForm(request.POST, instance=pessoa)
+        form = PessoaForm(request.POST, request.FILES, instance=pessoa)
         if form.is_valid():
             form.save()
+            
+            # Atualizar documento se enviado novo arquivo
+            arquivo = form.cleaned_data.get('arquivo')
+            if arquivo:
+                if documento_atual:
+                    # Remove arquivo antigo do storage
+                    documento_atual.arquivo.delete(save=False)
+                    documento_atual.arquivo = arquivo
+                    documento_atual.save()
+                else:
+                    Documento.objects.create(pessoa=pessoa, arquivo=arquivo)
+            
             messages.success(request, f'Pessoa {pessoa.nome_completo} atualizada com sucesso!')
             return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     else:
@@ -123,6 +143,7 @@ def pessoa_edit(request, pk):
         'form': form,
         'titulo': 'Editar Pessoa',
         'pessoa': pessoa,
+        'documento_atual': documento_atual,
         'voltar_url': f'/beneficio/{pessoa.beneficio.id}/pessoas/'
     }
     return render(request, 'beneficios/pessoa_form.html', context)
@@ -321,7 +342,11 @@ def pessoas_por_beneficio(request, beneficio_id):
 @login_required
 def beneficios_list(request):
     """Lista e gerencia benefícios"""
-    beneficios = Beneficio.objects.all().order_by('nome')
+    beneficios = Beneficio.objects.annotate(
+        total_pessoas=Count('pessoa'),
+        pessoas_ativas=Count('pessoa', filter=Q(pessoa__ativo=True)),
+        pessoas_desligadas=Count('pessoa', filter=Q(pessoa__ativo=False))
+    ).order_by('nome')
     
     context = {
         'beneficios': beneficios,

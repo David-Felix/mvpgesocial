@@ -2,6 +2,13 @@ from django import forms
 from .models import Pessoa, Documento, Beneficio
 
 class PessoaForm(forms.ModelForm):
+    arquivo = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'application/pdf'}),
+        #label='Documento PDF',
+        help_text='Tamanho máximo: 10MB (.pdf)'
+    )
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.data_nascimento:
@@ -41,6 +48,15 @@ class PessoaForm(forms.ModelForm):
             'valor_beneficio': 'Valor do Benefício (R$)',
             'beneficio': 'Tipo de Benefício',
         }
+    
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo:
+            if not arquivo.name.lower().endswith('.pdf'):
+                raise forms.ValidationError('Apenas arquivos PDF são permitidos.')
+            if arquivo.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('Arquivo muito grande. Tamanho máximo: 10MB.')
+        return arquivo
     
     def clean_celular(self):
         celular = self.cleaned_data.get('celular')

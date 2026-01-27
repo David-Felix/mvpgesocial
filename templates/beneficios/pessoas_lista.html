@@ -36,7 +36,7 @@
         <div class="col-md-4">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h5><i class="bi bi-x-circle"></i> Desativados</h5>
+                    <h5><i class="bi bi-x-circle"></i> Desligados</h5>
                     <h2>{{ total_desativados }}</h2>
                 </div>
             </div>
@@ -92,8 +92,8 @@
                         <label class="form-label small">Status</label>
                         <select name="status" class="form-control">
                             <option value="">Todos</option>
-                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativo</option>
-                            <option value="desativado" {% if filtros.status == 'desativado' %}selected{% endif %}>Desativado</option>
+                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativos</option>
+                            <option value="desativado" {% if filtros.status == 'desativado' %}selected{% endif %}>Desligados</option>
                         </select>
                     </div>
                     

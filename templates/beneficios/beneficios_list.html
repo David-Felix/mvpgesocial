@@ -41,22 +41,20 @@
 
                     <div class="mb-3">
                         <p class="text-muted mb-1"><strong>Estatísticas:</strong></p>
-                        {% with pessoas=beneficio.pessoa_set.all %}
                         <div class="row text-center">
                             <div class="col-4">
-                                <h5 class="mb-0">{{ pessoas.count }}</h5>
+                                <h5 class="mb-0">{{ beneficio.total_pessoas }}</h5>
                                 <small class="text-muted">Total</small>
                             </div>
                             <div class="col-4">
-                                <h5 class="mb-0 text-success">{{ pessoas|length }}</h5>
+                                <h5 class="mb-0 text-success">{{ beneficio.pessoas_ativas }}</h5>
                                 <small class="text-muted">Ativos</small>
                             </div>
                             <div class="col-4">
-                                <h5 class="mb-0 text-danger">0</h5>
-                                <small class="text-muted">Inativos</small>
+                                <h5 class="mb-0 text-danger">{{ beneficio.pessoas_desligadas }}</h5>
+                                <small class="text-muted">Desligados</small>
                             </div>
                         </div>
-                        {% endwith %}
                     </div>
 
                     <div class="d-flex gap-2">
