@@ -1,0 +1,287 @@
+{% extends 'beneficios/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Sistema de Benefícios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4" style="font-size: 1.50rem;"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+    <!-- SEÇÃO: BENEFÍCIOS ATIVOS -->
+    <h3 class="section-title"><i class="bi bi-wallet2"></i> Benefícios Ativos</h3>
+    <div class="row mb-4">
+        {% for beneficio in beneficios %}
+        <div class="col-xl-3 col-lg-6 col-md-12 mb-4">
+            <div class="card benefit-card {{ beneficio.cor_classe }} h-100 shadow-sm" onclick="window.location.href='{% url 'pessoas_por_beneficio' beneficio.id %}'">
+                <div class="card-body text-center text-white p-4">
+                    <div class="mb-3">
+                        <i class="bi {{ beneficio.icone }}" style="font-size: 4rem;"></i>
+                    </div>
+                    <h4 class="card-title mb-3 text-white">{{ beneficio.nome }}</h4>
+                    
+                    <div class="mb-3 p-2" style="background: rgba(255,255,255,0.2); border-radius: 8px;">
+                        <small class="d-block text-white" style="opacity: 0.9;">Valor Mensal</small>
+                        <h5 class="mb-0 text-white">R$ {{ beneficio.valor_mensal_formatado }}</h5>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <h5 class="text-white">{{ beneficio.ativos }}</h5>
+                            <p class="text-white small mb-0">Ativos</p>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-white">{{ beneficio.desativados }}</h5>
+                            <p class="text-white small mb-0">Desligados</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6 class="text-white">Total: {{ beneficio.total }}</h6>
+                    </div>
+                    <div class="mt-3">
+                        <span class="btn btn-light btn-sm">
+                            <i class="bi bi-eye"></i> Ver Beneficiados
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">Nenhum benefício ativo cadastrado.</p>
+                <a href="{% url 'beneficio_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Criar Primeiro Benefício
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- SEÇÃO: OVERVIEW GERAL -->
+    <h3 class="section-title"><i class="bi bi-graph-up"></i> Overview Geral</h3>
+    <div class="row mb-4">
+        <!-- Total Mensal -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card overview-card">
+                <div class="card-body d-flex align-items-center py-2 px-3">
+                    <div class="overview-icon icon-money me-3">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                        <p class="overview-label mb-1">Total Mensal</p>
+                        <h3 class="overview-value text-truncate">R$ {{ total_mensal_geral_formatado }}</h3>
+                        <small class="overview-subtitle">Benefícios ativos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card overview-card">
+                <div class="card-body d-flex align-items-center py-2 px-3">
+                    <div class="overview-icon icon-info me-3">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                        <p class="overview-label mb-1">Total</p>
+                        <h3 class="overview-value">{{ total_geral }}</h3>
+                        <small class="overview-subtitle">Beneficiados</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ativos -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card overview-card">
+                <div class="card-body d-flex align-items-center py-2 px-3">
+                    <div class="overview-icon icon-success me-3">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                        <p class="overview-label mb-1">Ativos</p>
+                        <h3 class="overview-value">{{ total_ativos_geral }}</h3>
+                        <small class="overview-subtitle">Pessoas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Desligados -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card overview-card">
+                <div class="card-body d-flex align-items-center py-2 px-3">
+                    <div class="overview-icon icon-danger me-3">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                        <p class="overview-label mb-1">Desligados</p>
+                        <h3 class="overview-value">{{ total_desativados_geral }}</h3>
+                        <small class="overview-subtitle">Pessoas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- SEÇÃO: DISTRIBUIÇÃO POR VALOR -->
+    <h3 class="section-title"><i class="bi bi-bar-chart"></i> Distribuição por Valor</h3>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card" style="border: none; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.06);">
+                <div class="card-body py-3 px-4">
+                    <h6 class="mb-3 text-center" style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">
+                        <i class="bi bi-cash-coin"></i> Pessoas por Faixa de Benefício
+                    </h6>
+                    
+                    {% if total_ativos_geral > 0 %}
+                    <div class="row g-3">
+                        <!-- Até R$ 100 -->
+                        <div class="col-xl-2 col-lg-4 col-md-6">
+                            <div class="distribuicao-card dist-azul">
+                                <div class="distribuicao-left">
+                                    <div class="distribuicao-faixa">
+                                        <i class="bi bi-coin"></i>
+                                        <span>Até R$ 100</span>
+                                    </div>
+                                    <div class="distribuicao-contador">
+                                        <i class="bi bi-people-fill"></i>
+                                        <h4>{{ distribuicao_valor.ate_100 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="distribuicao-right">
+                                    <h3 class="distribuicao-percentual">{% widthratio distribuicao_valor.ate_100 total_ativos_geral 100 %}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- R$ 101-150 -->
+                        <div class="col-xl-2 col-lg-4 col-md-6">
+                            <div class="distribuicao-card dist-verde">
+                                <div class="distribuicao-left">
+                                    <div class="distribuicao-faixa">
+                                        <i class="bi bi-cash"></i>
+                                        <span>R$ 101-150</span>
+                                    </div>
+                                    <div class="distribuicao-contador">
+                                        <i class="bi bi-people-fill"></i>
+                                        <h4>{{ distribuicao_valor.de_101_150 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="distribuicao-right">
+                                    <h3 class="distribuicao-percentual">{% widthratio distribuicao_valor.de_101_150 total_ativos_geral 100 %}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- R$ 151-200 -->
+                        <div class="col-xl-2 col-lg-4 col-md-6">
+                            <div class="distribuicao-card dist-laranja">
+                                <div class="distribuicao-left">
+                                    <div class="distribuicao-faixa">
+                                        <i class="bi bi-wallet2"></i>
+                                        <span>R$ 151-200</span>
+                                    </div>
+                                    <div class="distribuicao-contador">
+                                        <i class="bi bi-people-fill"></i>
+                                        <h4>{{ distribuicao_valor.de_151_200 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="distribuicao-right">
+                                    <h3 class="distribuicao-percentual">{% widthratio distribuicao_valor.de_151_200 total_ativos_geral 100 %}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- R$ 201-250 -->
+                        <div class="col-xl-2 col-lg-4 col-md-6">
+                            <div class="distribuicao-card dist-roxo">
+                                <div class="distribuicao-left">
+                                    <div class="distribuicao-faixa">
+                                        <i class="bi bi-piggy-bank"></i>
+                                        <span>R$ 201-250</span>
+                                    </div>
+                                    <div class="distribuicao-contador">
+                                        <i class="bi bi-people-fill"></i>
+                                        <h4>{{ distribuicao_valor.de_201_250 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="distribuicao-right">
+                                    <h3 class="distribuicao-percentual">{% widthratio distribuicao_valor.de_201_250 total_ativos_geral 100 %}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- R$ 251-300 -->
+                        <div class="col-xl-2 col-lg-4 col-md-6">
+                            <div class="distribuicao-card dist-rosa">
+                                <div class="distribuicao-left">
+                                    <div class="distribuicao-faixa">
+                                        <i class="bi bi-cash-stack"></i>
+                                        <span>R$ 251-300</span>
+                                    </div>
+                                    <div class="distribuicao-contador">
+                                        <i class="bi bi-people-fill"></i>
+                                        <h4>{{ distribuicao_valor.de_251_300 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="distribuicao-right">
+                                    <h3 class="distribuicao-percentual">{% widthratio distribuicao_valor.de_251_300 total_ativos_geral 100 %}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Acima R$ 300 -->
+                        <div class="col-xl-2 col-lg-4 col-md-6">
+                            <div class="distribuicao-card dist-turquesa">
+                                <div class="distribuicao-left">
+                                    <div class="distribuicao-faixa">
+                                        <i class="bi bi-gem"></i>
+                                        <span>Acima R$ 300</span>
+                                    </div>
+                                    <div class="distribuicao-contador">
+                                        <i class="bi bi-people-fill"></i>
+                                        <h4>{{ distribuicao_valor.acima_300 }}</h4>
+                                    </div>
+                                </div>
+                                <div class="distribuicao-right">
+                                    <h3 class="distribuicao-percentual">{% widthratio distribuicao_valor.acima_300 total_ativos_geral 100 %}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Barra consolidada -->
+                    <div class="mt-3" style="height: 12px; background: #f7fafc; border-radius: 6px; overflow: hidden; display: flex; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                        {% if distribuicao_valor.ate_100 > 0 %}
+                        <div style="width: {% widthratio distribuicao_valor.ate_100 total_ativos_geral 100 %}%; background: #1976d2;" title="Até R$ 100: {{ distribuicao_valor.ate_100 }}"></div>
+                        {% endif %}
+                        {% if distribuicao_valor.de_101_150 > 0 %}
+                        <div style="width: {% widthratio distribuicao_valor.de_101_150 total_ativos_geral 100 %}%; background: #388e3c;" title="R$ 101-150: {{ distribuicao_valor.de_101_150 }}"></div>
+                        {% endif %}
+                        {% if distribuicao_valor.de_151_200 > 0 %}
+                        <div style="width: {% widthratio distribuicao_valor.de_151_200 total_ativos_geral 100 %}%; background: #f57c00;" title="R$ 151-200: {{ distribuicao_valor.de_151_200 }}"></div>
+                        {% endif %}
+                        {% if distribuicao_valor.de_201_250 > 0 %}
+                        <div style="width: {% widthratio distribuicao_valor.de_201_250 total_ativos_geral 100 %}%; background: #7b1fa2;" title="R$ 201-250: {{ distribuicao_valor.de_201_250 }}"></div>
+                        {% endif %}
+                        {% if distribuicao_valor.de_251_300 > 0 %}
+                        <div style="width: {% widthratio distribuicao_valor.de_251_300 total_ativos_geral 100 %}%; background: #c2185b;" title="R$ 251-300: {{ distribuicao_valor.de_251_300 }}"></div>
+                        {% endif %}
+                        {% if distribuicao_valor.acima_300 > 0 %}
+                        <div style="width: {% widthratio distribuicao_valor.acima_300 total_ativos_geral 100 %}%; background: #00796b;" title="Acima R$ 300: {{ distribuicao_valor.acima_300 }}"></div>
+                        {% endif %}
+                    </div>
+                    
+                    {% else %}
+                    <p class="text-center text-muted mb-0">Nenhum beneficiário ativo para exibir</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

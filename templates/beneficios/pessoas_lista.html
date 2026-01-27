@@ -1,0 +1,291 @@
+{% extends 'beneficios/base.html' %}
+
+{% block title %}{{ beneficio.nome }} - Sistema de Benefícios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'dashboard' %}" class="btn btn-link text-decoration-none" style="color: #4a7cff; font-size: 0.95rem;">
+                <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+            </a>
+            <h2 class="mt-2" style="font-size: 1.25rem;">
+                {% if beneficio.nome == 'Auxílio Transporte' %}
+                <i class="bi bi-bus-front" style="color: #4e73df;"></i>
+                {% else %}
+                <i class="bi bi-cash-coin" style="color: #1cc88a;"></i>
+                {% endif %}
+                {{ beneficio.nome }}
+            </h2>
+        </div>
+        <a href="{% url 'pessoa_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nova Pessoa
+        </a>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5><i class="bi bi-check-circle"></i> Ativos</h5>
+                    <h2>{{ total_ativos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5><i class="bi bi-x-circle"></i> Desativados</h5>
+                    <h2>{{ total_desativados }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5><i class="bi bi-people"></i> Total</h5>
+                    <h2>{{ total_geral }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário de Filtros -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> Filtros de Busca
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="">
+                <!-- Mantém a paginação atual ao filtrar -->
+                <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
+                
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label small">Nome</label>
+                        <input type="text" name="nome" class="form-control" 
+                               placeholder="Buscar por nome" value="{{ filtros.nome }}">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label small">CPF (últimos 4 dígitos)</label>
+                        <input type="text" name="cpf" class="form-control" 
+                               placeholder="0000" value="{{ filtros.cpf }}">
+                    </div>
+                    
+                    
+                    <div class="col-md-1">
+                        <label class="form-label small">Valor Mínimo</label>
+                        <input type="text" name="valor_min" class="form-control" 
+                               placeholder="0,00" value="{{ filtros.valor_min }}">
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <label class="form-label small">Valor Máximo</label>
+                        <input type="text" name="valor_max" class="form-control" 
+                               placeholder="0,00" value="{{ filtros.valor_max }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="">Todos</option>
+                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativo</option>
+                            <option value="desativado" {% if filtros.status == 'desativado' %}selected{% endif %}>Desativado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <label class="form-label small">De ID (nº)</label>
+                        <input type="number" name="id_de" class="form-control" 
+                               placeholder="" min="1" value="{{ filtros.id_de }}">
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <label class="form-label small">Até ID (nº)</label>
+                        <input type="number" name="id_ate" class="form-control" 
+                               placeholder="" min="1" value="{{ filtros.id_ate }}">
+                    </div>
+                    
+                    <div class="col-md-2 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-info flex-fill">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                        <a href="{% url 'pessoas_por_beneficio' beneficio.id %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Limpar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela de Pessoas -->
+    <div class="card">
+        <div class="card-body">
+            {% if pessoas %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome Completo</th>
+                            <th>CPF</th>
+                            <th>Valor (R$)</th>
+                            <th>Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pessoa in pessoas %}
+                        <tr>
+                            <td>{{ pessoa.ordem }}</td>
+                            <td>{{ pessoa.nome_completo }}</td>
+                            <td>{{ pessoa.cpf }}</td>
+                            <td>{{ pessoa.valor_beneficio|floatformat:2 }}</td>
+                            <td>
+                                {% if pessoa.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                <span class="badge bg-danger">Desativado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'pessoa_edit' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    
+                                    {% if pessoa.ativo %}
+                                    <a href="{% url 'pessoa_toggle' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Desativar esta pessoa?')"
+                                       title="Desativar">
+                                        <i class="bi bi-pause-circle"></i>
+                                    </a>
+                                    
+                                    <a href="{% url 'gerar_memorando' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-info"
+                                       title="Memorando"
+                                       target="_blank">
+                                        <i class="bi bi-file-text"></i>
+                                    </a>
+                                    
+                                    <a href="{% url 'gerar_recibo' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Recibo (2 vias)"
+                                       target="_blank">
+                                        <i class="bi bi-receipt"></i>
+                                    </a>
+                                    
+                                    {% if pessoa.documento %}
+                                    <a href="{% url 'gerar_documentos' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-dark"
+                                       title="Documentos"
+                                       target="_blank">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'pessoa_documento' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Upload Documento">
+                                        <i class="bi bi-cloud-upload"></i>
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% else %}
+                                    <a href="{% url 'pessoa_toggle' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       onclick="return confirm('Ativar esta pessoa?')"
+                                       title="Ativar">
+                                        <i class="bi bi-play-circle"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Controles de Paginação -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    <label class="me-2">Mostrar:</label>
+                    <select class="form-select form-select-sm d-inline-block" style="width: auto;" 
+                            onchange="location.href='?por_pagina=' + this.value + '&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}'">
+                        <option value="15" {% if por_pagina == 15 %}selected{% endif %}>15</option>
+                        <option value="25" {% if por_pagina == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
+                    </select>
+                    <span class="ms-2 text-muted">por página</span>
+                </div>
+                
+                {% if pessoas.has_other_pages %}
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if pessoas.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Primeira</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pessoas.previous_page_number }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Anterior</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item disabled">
+                            <span class="page-link">Página {{ pessoas.number }} de {{ pessoas.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if pessoas.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pessoas.next_page_number }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Próxima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pessoas.paginator.num_pages }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Última</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+
+            <!-- Botões em Massa -->
+            <div class="d-flex justify-content-end mt-4 gap-2">
+                <a href="{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
+                   class="btn btn-outline-info" 
+                   target="_blank">
+                    <i class="bi bi-file-earmark-text"></i> Memorando em Massa
+                </a>
+                <a href="{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
+                   class="btn btn-outline-success" 
+                   target="_blank">
+                    <i class="bi bi-receipt-cutoff"></i> Recibos em Massa
+                </a>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                
+                {% if filtros.nome or filtros.cpf or filtros.status or filtros.valor_min or filtros.valor_max or filtros.id_de or filtros.id_ate %}
+                    <p class="text-muted mt-3">Nenhuma pessoa encontrada com os filtros aplicados.</p>
+                    <a href="{% url 'pessoas_por_beneficio' beneficio.id %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i> Limpar Filtros
+                    </a>
+                {% else %}
+                    <p class="text-muted mt-3">Nenhuma pessoa cadastrada neste benefício ainda.</p>
+                    <a href="{% url 'pessoa_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Cadastrar Primeira Pessoa
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+<!-- beneficio_form.html -->
+
+{% extends 'beneficios/base.html' %}
+
+{% block title %}{{ titulo }} - Sistema de Benefícios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-gear-fill"></i> {{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Benefício</label>
+                            <input type="text" 
+                                   name="nome" 
+                                   class="form-control" 
+                                   value="{{ beneficio.nome|default:'' }}"
+                                   placeholder="Ex: Auxílio Alimentação"
+                                   required>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Nome que identifica o benefício
+                            </div>
+                        </div> 
+                        <div class="mb-3">
+                            <label class="form-label">Ícone do Benefício</label>
+                            <div class="row">
+                                <div class="col-4 col-md-2 mb-3">
+                                    <input type="radio" class="btn-check" name="icone" id="icon1" value="bi-bus-front" 
+                                           {% if beneficio.icone == 'bi-bus-front' %}checked{% endif %} required>
+                                    <label class="btn btn-outline-primary w-100 text-center" for="icon1">
+                                        <i class="bi bi-bus-front d-block" style="font-size: 2rem;"></i>
+                                        <small>Ônibus</small>
+                                    </label>
+                                </div>
+                                <div class="col-4 col-md-2 mb-3">
+                                    <input type="radio" class="btn-check" name="icone" id="icon2" value="bi-cash-coin"
+                                           {% if beneficio.icone == 'bi-cash-coin' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary w-100 text-center" for="icon2">
+                                        <i class="bi bi-cash-coin d-block" style="font-size: 2rem;"></i>
+                                        <small>Moeda</small>
+                                    </label>
+                                </div>
+                                <div class="col-4 col-md-2 mb-3">
+                                    <input type="radio" class="btn-check" name="icone" id="icon3" value="bi-calendar-event"
+                                           {% if beneficio.icone == 'bi-calendar-event' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary w-100 text-center" for="icon3">
+                                        <i class="bi bi-calendar-event d-block" style="font-size: 2rem;"></i>
+                                        <small>Único</small>
+                                    </label>
+                                </div>
+                                <div class="col-4 col-md-2 mb-3">
+                                    <input type="radio" class="btn-check" name="icone" id="icon4" value="bi-hourglass-split"
+                                           {% if beneficio.icone == 'bi-hourglass-split' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary w-100 text-center" for="icon4">
+                                        <i class="bi bi-hourglass-split d-block" style="font-size: 2rem;"></i>
+                                        <small>Temporário</small>
+                                    </label>
+                                </div>
+                                <div class="col-4 col-md-2 mb-3">
+                                    <input type="radio" class="btn-check" name="icone" id="icon5" value="bi-cart"
+                                           {% if beneficio.icone == 'bi-cart' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary w-100 text-center" for="icon5">
+                                        <i class="bi bi-cart d-block" style="font-size: 2rem;"></i>
+                                        <small>Mercado</small>
+                                    </label>
+                                </div>
+                                <div class="col-4 col-md-2 mb-3">
+                                    <input type="radio" class="btn-check" name="icone" id="icon6" value="bi-heart-pulse"
+                                           {% if beneficio.icone == 'bi-heart-pulse' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary w-100 text-center" for="icon6">
+                                        <i class="bi bi-heart-pulse d-block" style="font-size: 2rem;"></i>
+                                        <small>Saúde</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Escolha o ícone que representa o benefício
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Conta Pagadora</label>
+                            <textarea name="conta_pagadora" 
+                                      class="form-control" 
+                                      rows="3"
+                                      placeholder="Ex: 56789-0">{{ beneficio.conta_pagadora|default:'' }}</textarea>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Informações da conta que realizará os pagamentos (opcional)
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-lightbulb"></i>
+                            <strong>Dica:</strong> Após criar o benefício, você poderá cadastrar pessoas vinculadas a ele.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'beneficios_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

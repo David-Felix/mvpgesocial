@@ -1,0 +1,98 @@
+from io import BytesIO
+from PyPDF2 import PdfMerger
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
+from datetime import datetime
+
+def gerar_recibo(pessoa):
+    """Gera um recibo individual"""
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Margem
+    margin = 2 * cm
+    
+    texto = [
+    "ESTADO DA PARAÍBA",
+    "PREFEITURA MUNICIPAL DE POCINHOS",
+    "SECRETARIA MUNICIPAL DA ASSISTÊNCIA DE SOCIAL"
+    ]
+
+    # Título
+    c.setFont("Helvetica-Bold", 14)
+    y = height - 3*cm
+    for linha in texto:
+        c.drawCentredString(width / 2, y, linha)
+        y -= 0.7*cm  # Ajuste a distância entre linhas    
+    # Linha separadora
+    c.line(margin, height - 4*cm, width - margin, height - 4*cm)
+    
+    # Conteúdo
+    c.setFont("Helvetica", 12)
+    y_position = height - 6*cm
+    
+    # Data
+    data_hoje = datetime.now().strftime("%d/%m/%Y")
+    c.drawString(margin, y_position, f"Data: {data_hoje}")
+    y_position -= 1.5*cm
+    
+    # Texto do recibo
+    c.setFont("Helvetica", 11)
+    texto = f"Declaro que {pessoa.nome_completo}, CPF {pessoa.cpf}, "
+    c.drawString(margin, y_position, texto)
+    y_position -= 0.7*cm
+    
+    texto2 = f"recebeu o valor de R$ {pessoa.valor_beneficio:.2f} ({valor_por_extenso(pessoa.valor_beneficio)}) "
+    c.drawString(margin, y_position, texto2)
+    y_position -= 0.7*cm
+    
+    texto3 = f"referente ao benefício {pessoa.beneficio.nome}."
+    c.drawString(margin, y_position, texto3)
+    y_position -= 3*cm
+    
+    # Assinatura
+    c.line(margin + 3*cm, y_position, width - margin - 3*cm, y_position)
+    y_position -= 0.5*cm
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(width / 2, y_position, "Assinatura do Beneficiário")
+    
+    # Rodapé
+    c.setFont("Helvetica-Oblique", 8)
+    c.drawCentredString(width / 2, 2*cm, "Documento gerado automaticamente pelo Sistema de Benefícios")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+def valor_por_extenso(valor):
+    """Converte valor para extenso (simplificado)"""
+    # Implementação simplificada
+    return f"{'%.2f' % valor} reais"
+
+def gerar_pdf_completo(pessoa):
+    """Gera PDF completo: 2 recibos no topo + documentos originais"""
+    merger = PdfMerger()
+    
+    # 1. Adiciona primeiro recibo (TOPO)
+    recibo1 = gerar_recibo(pessoa)
+    merger.append(recibo1)
+    
+    # 2. Adiciona segundo recibo (TOPO)
+    recibo2 = gerar_recibo(pessoa)
+    merger.append(recibo2)
+    
+    # 3. Adiciona documentos originais por último (se existir)
+    if hasattr(pessoa, 'documento') and pessoa.documento.arquivo:
+        merger.append(pessoa.documento.arquivo.path)
+    
+    # Gera PDF final
+    output = BytesIO()
+    merger.write(output)
+    merger.close()
+    output.seek(0)
+    
+    return output

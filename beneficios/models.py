@@ -1,0 +1,101 @@
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
+
+class User(AbstractUser):
+    """Usuário customizado para futuras expansões"""
+    pass
+
+class Beneficio(models.Model):
+    """Tipos de benefícios: Auxílio Transporte e Renda Solidária"""
+    ICONE_CHOICES = [
+        ('bi-bus-front', 'Ônibus'),
+        ('bi-cash-coin', 'Moeda'),
+        ('bi-calendar-event', 'Único'),
+        ('bi-hourglass-split', 'Temporário'),
+        ('bi-cart', 'Mercado'),
+        ('bi-heart-pulse', 'Saúde'),
+    ]
+    
+    nome = models.CharField(max_length=100, unique=True)
+    conta_pagadora = models.CharField(max_length=200, blank=True)
+    icone = models.CharField(max_length=30, choices=ICONE_CHOICES, default='bi-wallet2')
+    ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Benefício'
+        verbose_name_plural = 'Benefícios'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return self.nome
+
+class Pessoa(models.Model):
+    """Cadastro de pessoas beneficiárias"""
+    SEXO_CHOICES = [
+        ('M', 'Masculino'),
+        ('F', 'Feminino'),
+        ('O', 'Outro'),
+    ]
+
+    CIDADE_CHOICES = [
+        ('Pocinhos/PB', 'Pocinhos/PB'),
+    ]
+    
+    nome_completo = models.CharField(max_length=200)
+    #cpf = models.CharField(max_length=14, unique=True)
+    cpf=EncryptedCharField(max_length=14, unique=True, verbose_name='CPF')  # CRIPTOGRAFADO
+    cpf_ultimos_4 = models.CharField(max_length=4, db_index=True, blank=True, default='')
+    sexo = models.CharField(max_length=1, choices=SEXO_CHOICES)
+    data_nascimento = models.DateField(null=True, blank=True)
+    celular = models.CharField(max_length=15, blank=True)
+    endereco = models.TextField()
+    bairro = models.CharField(max_length=100)
+    cidade = models.CharField(max_length=50, choices=CIDADE_CHOICES)
+    valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2)
+    beneficio = models.ForeignKey(Beneficio, on_delete=models.PROTECT)
+    ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Pessoa'
+        verbose_name_plural = 'Pessoas'
+        ordering = ['nome_completo']
+        
+    def save(self, *args, **kwargs):
+        # Extrai últimos 4 dígitos do CPF ao salvar
+        if self.cpf:
+            cpf_numeros = ''.join(filter(str.isdigit, self.cpf))
+            if len(cpf_numeros) >= 4:
+                self.cpf_ultimos_4 = cpf_numeros[-4:]
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.nome_completo} - {self.cpf}"
+
+class Documento(models.Model):
+    """Documentos PDF das pessoas"""
+    pessoa = models.OneToOneField(Pessoa, on_delete=models.CASCADE, related_name='documento')
+    arquivo = models.FileField(upload_to='documentos/%Y/%m/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Documento'
+        verbose_name_plural = 'Documentos'
+    
+    def __str__(self):
+        return f"Documento de {self.pessoa.nome_completo}"
+
+class PermissoesGerais(models.Model):
+    class Meta:
+        # Isso evita criar uma tabela desnecessária no banco
+        managed = False
+        
+        # Aqui criamos as permissões
+        permissions = [
+            ("pode_ver_configuracoes", "Pode acessar as configurações do sistema"),
+            ("pode_fazer_backup", "Pode realizar e baixar backups"),
+        ]

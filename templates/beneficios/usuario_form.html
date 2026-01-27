@@ -1,0 +1,73 @@
+{% extends 'beneficios/base.html' %}
+
+{% block title %}{{ titulo }} - Sistema de Benefícios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-plus"></i> {{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+			<div class="mb-3">
+    			    <label class="form-label">Nome de Usuário</label>
+    			    <input type="text" 
+           			    name="username" 
+           		 	    class="form-control" 
+           			    pattern="[a-zA-Z0-9._-]+"
+                                    title="Apenas letras, números, ponto, hífen e underscore. Sem espaços!"required>
+    			    <div class="form-text">
+        		        <i class="bi bi-info-circle"></i> Usado para fazer login no sistema (sem espaços)
+    			    </div>
+			</div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha</label>
+                            <input type="password" 
+                                   name="password" 
+                                   class="form-control" 
+                                   placeholder="Digite uma senha forte"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       name="is_staff" 
+                                       id="is_staff">
+                                <label class="form-check-label" for="is_staff">
+                                    <strong>Tornar Administrador</strong>
+                                </label>
+                                <div class="form-text">
+                                    <i class="bi bi-shield-check"></i> Administradores têm acesso ao painel admin e gerenciamento de usuários
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Atenção:</strong> Anote a senha, pois não será possível recuperá-la depois!
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'usuarios_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Criar Usuário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,347 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GeSocial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- templates/beneficios/login.html - ajustar apenas o CSS -->
+
+    <style>
+        :root {
+            --primary: #1e2139;
+            --accent: #4a7cff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 460px;
+        }
+        
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        .logo-section img {
+            width: 220px;
+            height: auto;
+            filter: brightness(1.1) drop-shadow(0 8px 24px rgba(0,0,0,0.4));
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        
+        .login-card {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 15px 60px rgba(0,0,0,0.2);
+            padding: 3rem 2.5rem;
+        }
+        
+        .card-header-custom {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .system-title {
+            color: #4a5568;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        
+        .system-subtitle {
+            color: #718096;
+            font-size: 1rem;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            margin-bottom: 2rem;
+        }
+        
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin-bottom: 2rem;
+            opacity: 0.4;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.8rem;
+            font-size: 0.95rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.6rem;
+            font-size: 0.95rem;
+        }
+        
+        .form-control {
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0.9rem 1.2rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(74, 124, 255, 0.1);
+            outline: none;
+        }
+        
+        .input-group-text {
+            background: #f9fafb;
+            border: 1.5px solid #e5e7eb;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            color: #6b7280;
+        }
+        
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .btn-login {
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+            transition: all 0.2s;
+            margin-top: 1.5rem;
+        }
+        
+        .btn-login:hover:not(:disabled) {
+            background: #3662d9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 124, 255, 0.35);
+            color: white;
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .btn-login:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary-custom {
+            background: transparent;
+            border: 2px solid #e5e7eb;
+            color: #6b7280;
+            border-radius: 10px;
+            padding: 0.85rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .btn-secondary-custom:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .footer-text {
+            text-align: center;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.9rem;
+            margin-top: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .step-1, .step-2 {
+            display: none;
+        }
+        
+        .step-1.active, .step-2.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .system-title {
+                font-size: 2.2rem;
+            }
+            
+            .logo-section img {
+                width: 160px;
+            }
+            
+            .login-card {
+                padding: 2.5rem 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <img src="{% static 'images/logo_pocinhos.png' %}" alt="Logo Pocinhos">
+        </div>
+        
+        <div class="login-card">
+            <div class="card-header-custom">
+                <img src="{% static 'images/gesocial_logo.png' %}" alt="Logo GeSocial">
+                <p class="system-subtitle">Sistema de Gestão da Assistência Social</p>
+                <div class="divider"></div>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Usuário ou senha incorretos
+            </div>
+            {% endif %}
+
+            <form method="post" id="loginForm">
+                {% csrf_token %}
+                
+                <!-- Etapa 1: Usuário -->
+                <div class="step-1 active">
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" 
+                                   name="username" 
+                                   id="username"
+                                   class="form-control" 
+                                   placeholder="Digite seu usuário"
+                                   required 
+                                   autofocus>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-login" id="btnContinue" disabled>
+                        Continuar
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+                </div>
+                
+                <!-- Etapa 2: Senha -->
+                <div class="step-2">
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" 
+                                   id="usernameDisplay"
+                                   class="form-control" 
+                                   readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" 
+                                   name="password" 
+                                   id="password"
+                                   class="form-control" 
+                                   placeholder="Digite sua senha">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-login">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Entrar no Sistema
+                    </button>
+
+                    <button type="button" class="btn btn-secondary-custom" id="btnBack">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Voltar
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="footer-text">
+            <i class="bi bi-shield-check"></i> Prefeitura Municipal de Pocinhos/PB<br>
+            Secretaria de Assistência Social
+        </div>
+    </div>
+
+    <script>
+        const step1 = document.querySelector('.step-1');
+        const step2 = document.querySelector('.step-2');
+        const username = document.getElementById('username');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const password = document.getElementById('password');
+        const btnContinue = document.getElementById('btnContinue');
+        const btnBack = document.getElementById('btnBack');
+        
+        username.addEventListener('input', function() {
+            btnContinue.disabled = this.value.length < 3;
+        });
+        
+        btnContinue.addEventListener('click', function() {
+            if (username.value.length >= 3) {
+                usernameDisplay.value = username.value;
+                step1.classList.remove('active');
+                step2.classList.add('active');
+                password.focus();
+            }
+        });
+        
+        btnBack.addEventListener('click', function() {
+            step2.classList.remove('active');
+            step1.classList.add('active');
+            username.focus();
+        });
+    </script>
+</body>
+</html>

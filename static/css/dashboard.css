@@ -1,0 +1,264 @@
+/* ========== OVERVIEW CARDS ========== */
+.overview-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    height: 110px;
+}
+
+.overview-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.overview-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.icon-money {
+    background: linear-gradient(135deg, #1cc88a 0%, #17a673 100%);
+    color: white;
+}
+
+.icon-info {
+    background: linear-gradient(135deg, #36b9cc 0%, #2c9faf 100%);
+    color: white;
+}
+
+.icon-success {
+    background: linear-gradient(135deg, #1cc88a 0%, #17a673 100%);
+    color: white;
+}
+
+.icon-danger {
+    background: linear-gradient(135deg, #e74a3b 0%, #d32f2f 100%);
+    color: white;
+}
+
+.overview-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.overview-label {
+    font-size: 0.75rem;
+    color: #718096;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+}
+
+.overview-subtitle {
+    font-size: 0.65rem;
+    color: #a0aec0;
+}
+
+/* ========== DISTRIBUIÇÃO CARDS ========== */
+.distribuicao-card {
+    padding: 1rem;
+    border-radius: 8px;
+    min-height: 95px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.distribuicao-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.distribuicao-right {
+    width: 55px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.distribuicao-faixa {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.distribuicao-faixa i {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.distribuicao-faixa span {
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.distribuicao-contador {
+    display: flex;
+    align-items: center;
+}
+
+.distribuicao-contador i {
+    font-size: 0.95rem;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.distribuicao-contador h4 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+.distribuicao-percentual {
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+/* Cores das faixas */
+.dist-azul { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
+.dist-azul .distribuicao-faixa i,
+.dist-azul .distribuicao-faixa span { color: #1976d2; }
+.dist-azul .distribuicao-contador i,
+.dist-azul .distribuicao-contador h4 { color: #1565c0; }
+.dist-azul .distribuicao-percentual { color: #1976d2; }
+
+.dist-verde { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+.dist-verde .distribuicao-faixa i,
+.dist-verde .distribuicao-faixa span { color: #388e3c; }
+.dist-verde .distribuicao-contador i,
+.dist-verde .distribuicao-contador h4 { color: #2e7d32; }
+.dist-verde .distribuicao-percentual { color: #388e3c; }
+
+.dist-laranja { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+.dist-laranja .distribuicao-faixa i,
+.dist-laranja .distribuicao-faixa span { color: #f57c00; }
+.dist-laranja .distribuicao-contador i,
+.dist-laranja .distribuicao-contador h4 { color: #e65100; }
+.dist-laranja .distribuicao-percentual { color: #f57c00; }
+
+.dist-roxo { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+.dist-roxo .distribuicao-faixa i,
+.dist-roxo .distribuicao-faixa span { color: #7b1fa2; }
+.dist-roxo .distribuicao-contador i,
+.dist-roxo .distribuicao-contador h4 { color: #6a1b9a; }
+.dist-roxo .distribuicao-percentual { color: #7b1fa2; }
+
+.dist-rosa { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%); }
+.dist-rosa .distribuicao-faixa i,
+.dist-rosa .distribuicao-faixa span { color: #c2185b; }
+.dist-rosa .distribuicao-contador i,
+.dist-rosa .distribuicao-contador h4 { color: #ad1457; }
+.dist-rosa .distribuicao-percentual { color: #c2185b; }
+
+.dist-turquesa { background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%); }
+.dist-turquesa .distribuicao-faixa i,
+.dist-turquesa .distribuicao-faixa span { color: #00796b; }
+.dist-turquesa .distribuicao-contador i,
+.dist-turquesa .distribuicao-contador h4 { color: #00695c; }
+.dist-turquesa .distribuicao-percentual { color: #00796b; }
+
+/* ========== BENEFIT CARDS ========== */
+.benefit-card {
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.benefit-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.benefit-card:hover::before {
+    opacity: 1;
+}
+
+.benefit-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+.benefit-card-azul{
+    background: linear-gradient(135deg, #4e73df 0%, #6f8de8 100%);
+}
+
+.benefit-card-verde{
+    background: linear-gradient(135deg, #1cc88a 0%, #36d8a5 100%);
+}
+
+.benefit-card-turquesa{
+    background: linear-gradient(135deg, #36b9cc 0%, #4dd4e8 100%);
+}
+
+.benefit-card-roxo{
+    background: linear-gradient(135deg, #6f42c1 0%, #8c5dd8 100%);
+}
+
+.benefit-card i {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.benefit-card .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+/* ========== SECTION TITLES ========== */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* ========== RESPONSIVIDADE ========== */
+@media (max-width: 1400px) {
+    .overview-value {
+        font-size: 1.2rem;
+    }
+    .distribuicao-percentual {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    .overview-value {
+        font-size: 1.1rem;
+    }
+    .distribuicao-contador h4 {
+        font-size: 1.3rem;
+    }
+    .distribuicao-percentual {
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .distribuicao-right {
+        width: 50px;
+    }
+    .distribuicao-percentual {
+        font-size: 1.3rem;
+    }
+}

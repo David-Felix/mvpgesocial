@@ -1,0 +1,111 @@
+(venv) root@server-mvp-rs-at:~/sistema_beneficios# cat beneficios/utils.py 
+from io import BytesIO
+from PyPDF2 import PdfMerger
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
+from datetime import datetime
+
+def gerar_recibo(pessoa):
+    """Gera um recibo individual"""
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Margem
+    margin = 2 * cm
+    
+    # Título
+    c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(width / 2, height - 3*cm, "ESTADO DA PARAÍBA\nPREFEITURA MUNICIPAL DE POCINHOS\nSECRETARIA MUNICIPAL DE ASSISTÊNCIA DE SOCIAL")
+
+    # Subtítuilo
+    c.setFont("Helvetica-Bold", 20)
+    c.drawCentredString(width / 2, height - 3*cm, "RECIBO")
+    
+    # Linha separadora
+    #c.line(margin, height - 4*cm, width - margin, height - 4*cm)
+    
+    # Conteúdo
+    c.setFont("Helvetica", 12)
+    y_position = height - 6*cm
+
+    # Valor
+    c.setFont("Helvetica", 12)
+    c.drawString(margin, y_position, f"Valor R$: {pessoa.valor_beneficio:.2f}")
+    y_position = height - 6*cm
+    
+
+    # Texto do recibo
+    c.setFont("Helvetica", 11)
+    texto = f"Recebi da Prefeitura Municipal de Pocinhos, a importância de R$ {pessoa.valor_beneficio:.2f}, em virtude da necessidade de que seja garantido o pagamento referente ao {pessoa.beneficio.nome}, conforme PARECER SOCIAL FAVORÁVEL da
+Assistente Social do CRAS, referente ao mês de JANEIRO do corrente ano"
+    c.drawString(margin, y_position, texto)
+    y_position -= 0.7*cm
+    
+    # Texto do recibo
+    c.setFont("Helvetica", 11)
+    texto = f"Declaro que {pessoa.nome_completo}, CPF {pessoa.cpf}, "
+    c.drawString(margin, y_position, texto)
+    y_position -= 0.7*cm
+    
+    texto2 = f"Pelo que emito o presente recibo em duas vias de igual teor,
+dando-lhe plena e total quitação. "
+    c.drawString(margin, y_position, texto2)
+    y_position -= 0.7*cm
+    
+    #texto3 = f"referente ao benefício {pessoa.beneficio.nome}."
+    #c.drawString(margin, y_position, texto3)
+    #y_position -= 3*cm
+
+    # Data
+    data_hoje = datetime.now().strftime("%d/%m/%Y")
+    c.drawString(margin, y_position, f"Pocinhos: {data_hoje}")
+    y_position -= 1.5*cm
+    
+    # Assinatura
+    c.line(margin + 3*cm, y_position, width - margin - 3*cm, y_position)
+    y_position -= 0.5*cm
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(width / 2, y_position, f"{pessoa.nome_completo}")
+    c.drawCentredString(width / 2, y_position, f"{pessoa.cpf}")
+    c.drawCentredString(width / 2, y_position, f"{pessoa.endereco}")
+    
+    # Rodapé
+    c.setFont("Helvetica-Oblique", 8)
+    c.drawCentredString(width / 2, 2*cm, "Documento gerado automaticamente pelo Sistema de Benefícios")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+def valor_por_extenso(valor):
+    """Converte valor para extenso (simplificado)"""
+    # Implementação simplificada
+    return f"{'%.2f' % valor} reais"
+
+def gerar_pdf_completo(pessoa):
+    """Gera PDF completo: 2 recibos no topo + documentos originais"""
+    merger = PdfMerger()
+    
+    # 1. Adiciona primeiro recibo (TOPO)
+    recibo1 = gerar_recibo(pessoa)
+    merger.append(recibo1)
+    
+    # 2. Adiciona segundo recibo (TOPO)
+    recibo2 = gerar_recibo(pessoa)
+    merger.append(recibo2)
+    
+    # 3. Adiciona documentos originais por último (se existir)
+    if hasattr(pessoa, 'documento') and pessoa.documento.arquivo:
+        merger.append(pessoa.documento.arquivo.path)
+    
+    # Gera PDF final
+    output = BytesIO()
+    merger.write(output)
+    merger.close()
+    output.seek(0)
+    
+    return output

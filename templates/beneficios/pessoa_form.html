@@ -1,0 +1,166 @@
+{% extends 'beneficios/base.html' %}
+
+{% block title %}{{ titulo }} - Sistema de Benefícios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-plus"></i> {{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- pessoa_form.html - ajustar campos -->
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">{{ form.nome_completo.label }}</label>
+                                {{ form.nome_completo }}
+                                {% if form.nome_completo.errors %}
+                                <div class="text-danger small">{{ form.nome_completo.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.cpf.label }}</label>
+                                {{ form.cpf }}
+                                {% if form.cpf.errors %}
+                                <div class="text-danger small">{{ form.cpf.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.sexo.label }}</label>
+                                {{ form.sexo }}
+                                {% if form.sexo.errors %}
+                                <div class="text-danger small">{{ form.sexo.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.data_nascimento.label }}</label>
+                                {{ form.data_nascimento }}
+                                {% if form.data_nascimento.errors %}
+                                <div class="text-danger small">{{ form.data_nascimento.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.celular.label }}</label>
+                                {{ form.celular }}
+                                {% if form.celular.errors %}
+                                <div class="text-danger small">{{ form.celular.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">{{ form.endereco.label }}</label>
+                                {{ form.endereco }}
+                                {% if form.endereco.errors %}
+                                <div class="text-danger small">{{ form.endereco.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.bairro.label }}</label>
+                                {{ form.bairro }}
+                                {% if form.bairro.errors %}
+                                <div class="text-danger small">{{ form.bairro.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.cidade.label }}</label>
+                                {{ form.cidade }}
+                                {% if form.cidade.errors %}
+                                <div class="text-danger small">{{ form.cidade.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.beneficio.label }}</label>
+                                {{ form.beneficio }}
+                                {% if form.beneficio.help_text %}
+                                <div class="form-text text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> {{ form.beneficio.help_text }}
+                                </div>
+                                {% endif %}
+                                {% if form.beneficio.errors %}
+                                <div class="text-danger small">{{ form.beneficio.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.valor_beneficio.label }}</label>
+                                {{ form.valor_beneficio }}
+                                {% if form.valor_beneficio.errors %}
+                                <div class="text-danger small">{{ form.valor_beneficio.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ voltar_url }}" class="btn btn-secondary">
+    				<i class="bi bi-arrow-left"></i> Voltar
+			    </a>    
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% block extra_js %}
+<script>
+// Validação de CPF no frontend
+function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
+    let resto = 11 - (soma % 11);
+    let digito1 = resto > 9 ? 0 : resto;
+    
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
+    resto = 11 - (soma % 11);
+    let digito2 = resto > 9 ? 0 : resto;
+    
+    return parseInt(cpf.charAt(9)) === digito1 && parseInt(cpf.charAt(10)) === digito2;
+}
+
+// Máscara e validação ao digitar
+document.querySelector('input[name="cpf"]').addEventListener('blur', function() {
+    if (this.value && !validarCPF(this.value)) {
+        this.classList.add('is-invalid');
+        if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('invalid-feedback')) {
+            const error = document.createElement('div');
+            error.className = 'invalid-feedback';
+            error.textContent = 'CPF inválido';
+            this.parentNode.appendChild(error);
+        }
+    } else {
+        this.classList.remove('is-invalid');
+        const error = this.parentNode.querySelector('.invalid-feedback');
+        if (error) error.remove();
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
