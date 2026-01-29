@@ -15,6 +15,7 @@ urlpatterns = [
     path('pessoa/<int:pk>/editar/', views.pessoa_edit, name='pessoa_edit'),
     path('pessoa/<int:pk>/toggle/', views.pessoa_toggle, name='pessoa_toggle'),
     path('pessoa/<int:pk>/documento/', views.pessoa_documento, name='pessoa_documento'),
+    path('documento/<int:pk>/visualizar/', views.documento_protegido, name='documento_protegido'),
  
     # Documentos das pessoas
     path('pessoa/<int:pk>/recibo/', views.gerar_recibo, name='gerar_recibo'),

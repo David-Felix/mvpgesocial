@@ -4,15 +4,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-#SECRET_KEY = 'django-insecure-MUDE-ISSO-EM-PRODUCAO'
 SECRET_KEY = config('SECRET_KEY')
-
-#DEBUG = False
 DEBUG = config('DEBUG', default=False, cast=bool)
-
-#ALLOWED_HOSTS = ['benefix.duckdns.org', 'www.benefix.duckdns.org', '136.116.125.87', 'localhost', '127.0.0.1']
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
-
 FIELD_ENCRYPTION_KEY = config('ENCRYPTION_KEY')
 
 INSTALLED_APPS = [
@@ -22,7 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'beneficios',  # seu app
+    'beneficios',
 ]
 
 MIDDLEWARE = [
@@ -61,13 +55,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'beneficios_db',
         'USER': 'beneficios_user',
-        'PASSWORD': 'SuaSenhaForte123',
+        'PASSWORD': config('DATABASE_PASSWORD'),
         'HOST': 'localhost',
         'PORT': '5432',
-	'OPTIONS': {
-            'sslmode': 'prefer',  # Tenta SSL mas acerita sem se for necessario
+        'OPTIONS': {
+            'sslmode': 'prefer',
         }
-
     }
 }
 
@@ -83,31 +76,29 @@ TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = True
 
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+# Static files
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/sistema_beneficios_data/staticfiles'
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Media files (protegidos)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/var/www/sistema_beneficios_data/media'
 
 # Security
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
-# CSRF (HTTP por enquanto, HTTPS depois)
-CSRF_COOKIE_SECURE = True  # Mude para True após configurar SSL
-SESSION_COOKIE_SECURE = True  # Mude para True após configurar SSL
-CSRF_TRUSTED_ORIGINS = ['http://benefix.duckdns.org', 'http://136.116.125.87']
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = ['https://benefix.duckdns.org', 'https://www.benefix.duckdns.org']
+
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

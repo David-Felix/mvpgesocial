@@ -183,7 +183,7 @@
                                     </a>
                                     
                                     {% if pessoa.documento %}
-                                    <a href="{% url 'gerar_documentos' pessoa.pk %}" 
+                                    <a href="{% url 'documento_protegido' pessoa.documento.pk %}" 
                                        class="btn btn-sm btn-outline-dark"
                                        title="Documentos"
                                        target="_blank">

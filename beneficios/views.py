@@ -116,7 +116,12 @@ def pessoa_create(request):
 def pessoa_edit(request, pk):
     """Editar pessoa existente"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
-    documento_atual = getattr(pessoa, 'documento', None)
+    
+    # Buscar documento de forma segura
+    try:
+        documento_atual = pessoa.documento
+    except Documento.DoesNotExist:
+        documento_atual = None
     
     if request.method == 'POST':
         form = PessoaForm(request.POST, request.FILES, instance=pessoa)
@@ -138,6 +143,15 @@ def pessoa_edit(request, pk):
             return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     else:
         form = PessoaForm(instance=pessoa)
+    
+    context = {
+        'form': form,
+        'titulo': 'Editar Pessoa',
+        'pessoa': pessoa,
+        'documento_atual': documento_atual,
+        'voltar_url': f'/beneficio/{pessoa.beneficio.id}/pessoas/'
+    }
+    return render(request, 'beneficios/pessoa_form.html', context)
     
     context = {
         'form': form,
@@ -715,3 +729,29 @@ def gerar_recibos_massa(request, beneficio_id):
     except Exception as e:
         messages.error(request, f'Erro ao gerar recibos em massa: {str(e)}')
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+
+@login_required
+def documento_protegido(request, pk):
+    """Serve documento via X-Accel-Redirect (nginx) - requer autenticação"""
+    import os
+    from django.http import Http404
+    from django.conf import settings
+    from urllib.parse import quote
+    
+    documento = get_object_or_404(Documento, pk=pk)
+    
+    file_path = documento.arquivo.name
+    full_path = os.path.join(settings.MEDIA_ROOT, file_path)
+    
+    if not os.path.exists(full_path):
+        raise Http404("Documento não encontrado")
+    
+    # Codificar caminho para UTF-8
+    file_path_encoded = quote(file_path, safe='/')
+    
+    response = HttpResponse()
+    response['Content-Type'] = 'application/pdf'
+    response['Content-Disposition'] = f'inline; filename="{os.path.basename(file_path)}"'
+    response['X-Accel-Redirect'] = f'/protected-media/{file_path_encoded}'
+    
+    return response
