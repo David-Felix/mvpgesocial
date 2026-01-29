@@ -216,8 +216,8 @@ def pessoas_por_beneficio(request, beneficio_id):
     beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
     
     # Query Base
-    pessoas_query = Pessoa.objects.filter(beneficio=beneficio).order_by('nome_completo')
-    
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio).select_related('documento').order_by('nome_completo')
+        
     # Contagens dos Cards
     stats = pessoas_query.aggregate(
         ativos=Count('id', filter=Q(ativo=True)),
@@ -229,11 +229,9 @@ def pessoas_por_beneficio(request, beneficio_id):
     f_nome = request.GET.get('nome', '').strip()
     f_cpf = request.GET.get('cpf', '').strip()
     f_status = request.GET.get('status', '')
-    f_v_min = request.GET.get('valor_min', '').replace(',', '.')
-    f_v_max = request.GET.get('valor_max', '').replace(',', '.')
+    f_valor = request.GET.get('valor', '').replace(',', '.')
     f_pos_de = request.GET.get('id_de', '').strip()
     f_pos_ate = request.GET.get('id_ate', '').strip()
-    # REMOVIDO: f_sem_doc = request.GET.get('sem_documento', '')
     
     # Filtros no Banco
     pessoas_filtradas = pessoas_query
@@ -246,13 +244,9 @@ def pessoas_por_beneficio(request, beneficio_id):
     elif f_status == 'desativado':
         pessoas_filtradas = pessoas_filtradas.filter(ativo=False)
     
-    # REMOVIDO: Filtro sem documento
-    
     try:
-        if f_v_min and float(f_v_min) > 0:
-            pessoas_filtradas = pessoas_filtradas.filter(valor_beneficio__gte=float(f_v_min))
-        if f_v_max and float(f_v_max) > 0:
-            pessoas_filtradas = pessoas_filtradas.filter(valor_beneficio__lte=float(f_v_max))
+        if f_valor and float(f_valor) > 0:
+            pessoas_filtradas = pessoas_filtradas.filter(valor_beneficio=float(f_valor))
     except ValueError:
         pass
     
@@ -312,8 +306,7 @@ def pessoas_por_beneficio(request, beneficio_id):
                 'nome': f_nome,
                 'cpf': f_cpf,
                 'status': f_status,
-                'valor_min': f_v_min,
-                'valor_max': f_v_max,
+                'valor': f_valor,
                 'id_de': f_pos_de,
                 'id_ate': f_pos_ate,
             }
@@ -344,8 +337,7 @@ def pessoas_por_beneficio(request, beneficio_id):
             'nome': f_nome,
             'cpf': f_cpf,
             'status': f_status,
-            'valor_min': f_v_min,
-            'valor_max': f_v_max,
+            'valor': f_valor,
             'id_de': f_pos_de,
             'id_ate': f_pos_ate,
         }
@@ -562,11 +554,7 @@ def gerar_memorando(request, pk):
     except Exception as e:
         messages.error(request, f'Erro ao gerar memorando: {str(e)}')
         return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
-# views.py - adicionar novas views
 
-# beneficios/views.py - ajustar gerar_memorando_massa
-
-# beneficios/views.py - ajustar gerar_memorando_massa
 
 @login_required
 def gerar_memorando_massa(request, beneficio_id):
@@ -580,8 +568,7 @@ def gerar_memorando_massa(request, beneficio_id):
     f_nome = request.GET.get('nome', '').strip()
     f_cpf = request.GET.get('cpf', '').strip()
     f_status = request.GET.get('status', '')
-    f_v_min = request.GET.get('valor_min', '').replace(',', '.')
-    f_v_max = request.GET.get('valor_max', '').replace(',', '.')
+    f_valor = request.GET.get('valor', '').replace(',', '.')
     f_pos_de = request.GET.get('id_de', '').strip()
     f_pos_ate = request.GET.get('id_ate', '').strip()
     
@@ -595,10 +582,8 @@ def gerar_memorando_massa(request, beneficio_id):
         pessoas_query = pessoas_query.filter(ativo=True)
     
     try:
-        if f_v_min and float(f_v_min) > 0:
-            pessoas_query = pessoas_query.filter(valor_beneficio__gte=float(f_v_min))
-        if f_v_max and float(f_v_max) > 0:
-            pessoas_query = pessoas_query.filter(valor_beneficio__lte=float(f_v_max))
+        if f_valor and float(f_valor) > 0:
+            pessoas_query = pessoas_query.filter(valor_beneficio=float(f_valor))
     except ValueError:
         pass
     
@@ -648,8 +633,6 @@ def gerar_memorando_massa(request, beneficio_id):
         messages.error(request, f'Erro ao gerar memorando em massa: {str(e)}')
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
 
-# beneficios/views.py - ajustar gerar_recibos_massa
-
 @login_required
 def gerar_recibos_massa(request, beneficio_id):
     """Gera recibos em massa (2 vias para cada pessoa) respeitando os filtros aplicados"""
@@ -662,8 +645,7 @@ def gerar_recibos_massa(request, beneficio_id):
     f_nome = request.GET.get('nome', '').strip()
     f_cpf = request.GET.get('cpf', '').strip()
     f_status = request.GET.get('status', '')
-    f_v_min = request.GET.get('valor_min', '').replace(',', '.')
-    f_v_max = request.GET.get('valor_max', '').replace(',', '.')
+    f_valor = request.GET.get('valor', '').replace(',', '.')
     f_pos_de = request.GET.get('id_de', '').strip()
     f_pos_ate = request.GET.get('id_ate', '').strip()
     
@@ -677,10 +659,8 @@ def gerar_recibos_massa(request, beneficio_id):
         pessoas_query = pessoas_query.filter(ativo=True)
     
     try:
-        if f_v_min and float(f_v_min) > 0:
-            pessoas_query = pessoas_query.filter(valor_beneficio__gte=float(f_v_min))
-        if f_v_max and float(f_v_max) > 0:
-            pessoas_query = pessoas_query.filter(valor_beneficio__lte=float(f_v_max))
+        if f_valor and float(f_valor) > 0:
+            pessoas_query = pessoas_query.filter(valor_beneficio=float(f_valor))
     except ValueError:
         pass
     

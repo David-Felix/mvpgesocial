@@ -44,7 +44,7 @@ def desenhar_conteudo_recibo(c, pessoa, width, height, margin):
     # Altere o caminho abaixo para o local real da imagem no seu servidor
     caminho_brasao = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'brasao.jpg')
     if os.path.exists(caminho_brasao):
-        c.drawImage(caminho_brasao, (width/2) - 1.25*cm, y_header, width=2.5*cm, height=2.5*cm, mask='auto')
+        c.drawImage(caminho_brasao, (width/2) - 0.75*cm, y_header, width=1.5*cm, height=1.5*cm, mask='auto')
         y_header -= 1.5 * cm
     else:
         # Se não houver imagem, apenas pula o espaço

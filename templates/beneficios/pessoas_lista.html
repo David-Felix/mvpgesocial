@@ -64,7 +64,7 @@
                 <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
                 
                 <div class="row g-3">
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label small">Nome</label>
                         <input type="text" name="nome" class="form-control" 
                                placeholder="Buscar por nome" value="{{ filtros.nome }}">
@@ -76,18 +76,12 @@
                                placeholder="0000" value="{{ filtros.cpf }}">
                     </div>
                     
-                    
                     <div class="col-md-1">
-                        <label class="form-label small">Valor Mínimo</label>
-                        <input type="text" name="valor_min" class="form-control" 
-                               placeholder="0,00" value="{{ filtros.valor_min }}">
+                        <label class="form-label small">Valor (R$)</label>
+                        <input type="text" name="valor" class="form-control" 
+                               placeholder="0,00" value="{{ filtros.valor }}">
                     </div>
                     
-                    <div class="col-md-1">
-                        <label class="form-label small">Valor Máximo</label>
-                        <input type="text" name="valor_max" class="form-control" 
-                               placeholder="0,00" value="{{ filtros.valor_max }}">
-                    </div>
                     <div class="col-md-2">
                         <label class="form-label small">Status</label>
                         <select name="status" class="form-control">
@@ -149,7 +143,7 @@
                                 {% if pessoa.ativo %}
                                 <span class="badge bg-success">Ativo</span>
                                 {% else %}
-                                <span class="badge bg-danger">Desativado</span>
+                                <span class="badge bg-danger">Desligado</span>
                                 {% endif %}
                             </td>
                             <td class="text-end">
@@ -163,8 +157,8 @@
                                     {% if pessoa.ativo %}
                                     <a href="{% url 'pessoa_toggle' pessoa.pk %}" 
                                        class="btn btn-sm btn-outline-danger"
-                                       onclick="return confirm('Desativar esta pessoa?')"
-                                       title="Desativar">
+                                       onclick="return confirm('Desligar esta pessoa?')"
+                                       title="Desligar">
                                         <i class="bi bi-pause-circle"></i>
                                     </a>
                                     
@@ -218,7 +212,7 @@
                 <div>
                     <label class="me-2">Mostrar:</label>
                     <select class="form-select form-select-sm d-inline-block" style="width: auto;" 
-                            onchange="location.href='?por_pagina=' + this.value + '&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}'">
+                            onchange="location.href='?por_pagina=' + this.value + '&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}'">
                         <option value="15" {% if por_pagina == 15 %}selected{% endif %}>15</option>
                         <option value="25" {% if por_pagina == 25 %}selected{% endif %}>25</option>
                         <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
@@ -231,10 +225,10 @@
                     <ul class="pagination pagination-sm mb-0">
                         {% if pessoas.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Primeira</a>
+                            <a class="page-link" href="?page=1&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Primeira</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ pessoas.previous_page_number }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Anterior</a>
+                            <a class="page-link" href="?page={{ pessoas.previous_page_number }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Anterior</a>
                         </li>
                         {% endif %}
                         
@@ -244,10 +238,10 @@
                         
                         {% if pessoas.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ pessoas.next_page_number }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Próxima</a>
+                            <a class="page-link" href="?page={{ pessoas.next_page_number }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Próxima</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ pessoas.paginator.num_pages }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Última</a>
+                            <a class="page-link" href="?page={{ pessoas.paginator.num_pages }}&por_pagina={{ por_pagina }}&nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}">Última</a>
                         </li>
                         {% endif %}
                     </ul>
@@ -257,12 +251,12 @@
 
             <!-- Botões em Massa -->
             <div class="d-flex justify-content-end mt-4 gap-2">
-                <a href="{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
+                <a href="{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
                    class="btn btn-outline-info" 
                    target="_blank">
                     <i class="bi bi-file-earmark-text"></i> Memorando em Massa
                 </a>
-                <a href="{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor_min={{ filtros.valor_min }}&valor_max={{ filtros.valor_max }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
+                <a href="{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
                    class="btn btn-outline-success" 
                    target="_blank">
                     <i class="bi bi-receipt-cutoff"></i> Recibos em Massa
@@ -272,7 +266,7 @@
             <div class="text-center py-5">
                 <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
                 
-                {% if filtros.nome or filtros.cpf or filtros.status or filtros.valor_min or filtros.valor_max or filtros.id_de or filtros.id_ate %}
+                {% if filtros.nome or filtros.cpf or filtros.status or filtros.valor or filtros.id_de or filtros.id_ate %}
                     <p class="text-muted mt-3">Nenhuma pessoa encontrada com os filtros aplicados.</p>
                     <a href="{% url 'pessoas_por_beneficio' beneficio.id %}" class="btn btn-primary">
                         <i class="bi bi-arrow-left"></i> Limpar Filtros
