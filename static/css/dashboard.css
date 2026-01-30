@@ -261,4 +261,186 @@
     .distribuicao-percentual {
         font-size: 1.3rem;
     }
+}}
+
+/* ========== CARDS OVERVIEW COMPACTO (pessoas_lista) ========== */
+.overview-card-sm {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    height: 90px;
 }
+
+.overview-card-sm:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.overview-icon-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.overview-value-sm {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.overview-label-sm {
+    font-size: 0.7rem;
+    color: #718096;
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+}
+
+.overview-subtitle-sm {
+    font-size: 0.6rem;
+    color: #a0aec0;
+}
+
+@media (max-width: 1200px) {
+    .overview-value-sm {
+        font-size: 1rem;
+    }
+}
+
+/* ========== CARD CONSOLIDADO (pessoas_lista - Opção A) ========== */
+.card-consolidado {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.card-consolidado .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+}
+
+.overview-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.overview-lista li {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.overview-lista li:last-child {
+    border-bottom: none;
+}
+
+.overview-lista .icone {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
+
+.overview-lista .valor {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-right: 0.5rem;
+}
+
+.overview-lista .label {
+    font-size: 0.8rem;
+    color: #718096;
+}
+
+/* Mini-cards de distribuição */
+.dist-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.dist-mini-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    padding: 12px 15px;
+    text-align: center;
+    border-left: 4px solid;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dist-mini-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dist-mini-card .faixa-nome {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 6px;
+}
+
+.dist-mini-card .faixa-valor {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.dist-mini-card .faixa-valor i {
+    font-size: 1.25rem;
+    opacity: 0.7;
+}
+
+/* Cores por faixa */
+.dist-azul { border-color: #3182ce; }
+.dist-azul .faixa-valor, .dist-azul .faixa-percent { color: #3182ce; }
+
+.dist-verde { border-color: #38a169; }
+.dist-verde .faixa-valor, .dist-verde .faixa-percent { color: #38a169; }
+
+.dist-laranja { border-color: #dd6b20; }
+.dist-laranja .faixa-valor, .dist-laranja .faixa-percent { color: #dd6b20; }
+
+.dist-roxo { border-color: #805ad5; }
+.dist-roxo .faixa-valor, .dist-roxo .faixa-percent { color: #805ad5; }
+
+.dist-rosa { border-color: #d53f8c; }
+.dist-rosa .faixa-valor, .dist-rosa .faixa-percent { color: #d53f8c; }
+
+.dist-turquesa { border-color: #319795; }
+.dist-turquesa .faixa-valor, .dist-turquesa .faixa-percent { color: #319795; }
+
+@media (max-width: 768px) {
+    .dist-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.barra-azul { background: linear-gradient(90deg, #4299e1, #3182ce); }
+.barra-verde { background: linear-gradient(90deg, #48bb78, #38a169); }
+.barra-laranja { background: linear-gradient(90deg, #ed8936, #dd6b20); }
+.barra-roxo { background: linear-gradient(90deg, #9f7aea, #805ad5); }
+.barra-rosa { background: linear-gradient(90deg, #ed64a6, #d53f8c); }
+.barra-turquesa { background: linear-gradient(90deg, #38b2ac, #319795); }

@@ -1,7 +1,9 @@
 {% extends 'beneficios/base.html' %}
-
+{% load static %}
 {% block title %}{{ beneficio.nome }} - Sistema de Benefícios{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -10,11 +12,7 @@
                 <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
             </a>
             <h2 class="mt-2" style="font-size: 1.25rem;">
-                {% if beneficio.nome == 'Auxílio Transporte' %}
-                <i class="bi bi-bus-front" style="color: #4e73df;"></i>
-                {% else %}
-                <i class="bi bi-cash-coin" style="color: #1cc88a;"></i>
-                {% endif %}
+                <i class="bi {{ beneficio.icone }}" style="color: #4e73df;"></i>
                 {{ beneficio.nome }}
             </h2>
         </div>
@@ -22,35 +20,75 @@
             <i class="bi bi-plus-circle"></i> Nova Pessoa
         </a>
     </div>
-
-    <!-- Cards de Estatísticas -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5><i class="bi bi-check-circle"></i> Ativos</h5>
-                    <h2>{{ total_ativos }}</h2>
-                </div>
-            </div>
+    <!-- Card Consolidado: Overview + Distribuição -->
+    <div class="card card-consolidado mb-4">
+        <div class="card-header">
+            <i class="bi bi-graph-up"></i> Overview do Benefício
         </div>
-        <div class="col-md-4">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5><i class="bi bi-x-circle"></i> Desligados</h5>
-                    <h2>{{ total_desativados }}</h2>
+        <div class="card-body">
+            <div class="row">
+                <!-- Coluna Esquerda: Overview -->
+                <div class="col-lg-4 col-md-5 border-end">
+                    <ul class="overview-lista">
+                        <li>
+                            <div class="icone icon-money"><i class="bi bi-cash-stack"></i></div>
+                            <span class="valor">R$ {{ total_mensal|floatformat:2 }}</span>
+                            <span class="label">Total Mensal</span>
+                        </li>
+                        <li>
+                            <div class="icone icon-info"><i class="bi bi-people"></i></div>
+                            <span class="valor">{{ total_geral }}</span>
+                            <span class="label">Total Beneficiados</span>
+                        </li>
+                        <li>
+                            <div class="icone icon-success"><i class="bi bi-check-circle"></i></div>
+                            <span class="valor">{{ total_ativos }}</span>
+                            <span class="label">Ativos</span>
+                        </li>
+                        <li>
+                            <div class="icone icon-danger"><i class="bi bi-x-circle"></i></div>
+                            <span class="valor">{{ total_desativados }}</span>
+                            <span class="label">Desligados</span>
+                        </li>
+                    </ul>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5><i class="bi bi-people"></i> Total</h5>
-                    <h2>{{ total_geral }}</h2>
-                </div>
+                <!-- Coluna Direita: Distribuição por Valor -->
+                <div class="col-lg-8 col-md-7 ps-lg-4">
+                    <h6 class="text-muted mb-3"><i class="bi bi-bar-chart"></i> Distribuição de Valor por Usuário</h6>
+                    {% if total_ativos > 0 %}
+                    <div class="dist-grid">
+                        <div class="dist-mini-card dist-azul">
+                            <div class="faixa-nome">Até R$ 100</div>
+                            <div class="faixa-valor"><i class="bi bi-people-fill"></i> {{ distribuicao_valor.ate_100 }}</div>
+                        </div>
+                        <div class="dist-mini-card dist-verde">
+                            <div class="faixa-nome">R$ 101-150</div>
+                            <div class="faixa-valor"><i class="bi bi-people-fill"></i> {{ distribuicao_valor.de_101_150 }}</div>
+                        </div>
+                        <div class="dist-mini-card dist-laranja">
+                            <div class="faixa-nome">R$ 151-200</div>
+                            <div class="faixa-valor"><i class="bi bi-people-fill"></i> {{ distribuicao_valor.de_151_200 }}</div>
+                        </div>
+                        <div class="dist-mini-card dist-roxo">
+                            <div class="faixa-nome">R$ 201-250</div>
+                            <div class="faixa-valor"><i class="bi bi-people-fill"></i> {{ distribuicao_valor.de_201_250 }}</div>
+                        </div>
+                        <div class="dist-mini-card dist-rosa">
+                            <div class="faixa-nome">R$ 251-300</div>
+                            <div class="faixa-valor"><i class="bi bi-people-fill"></i> {{ distribuicao_valor.de_251_300 }}</div>
+                        </div>
+                        <div class="dist-mini-card dist-turquesa">
+                            <div class="faixa-nome">Acima R$ 300</div>
+                            <div class="faixa-valor"><i class="bi bi-people-fill"></i> {{ distribuicao_valor.acima_300 }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhum beneficiário ativo para exibir</p>
+                    {% endif %}
+                </div>   
             </div>
         </div>
     </div>
-
     <!-- Formulário de Filtros -->
     <div class="card mb-4">
         <div class="card-header bg-light">
@@ -60,7 +98,6 @@
         </div>
         <div class="card-body">
             <form method="get" action="">
-                <!-- Mantém a paginação atual ao filtrar -->
                 <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
                 
                 <div class="row g-3">
@@ -77,17 +114,17 @@
                     </div>
                     
                     <div class="col-md-1">
-                        <label class="form-label small">Valor (R$)</label>
+                        <label class="form-label small">Valor</label>
                         <input type="text" name="valor" class="form-control" 
                                placeholder="0,00" value="{{ filtros.valor }}">
                     </div>
-                    
+
                     <div class="col-md-2">
                         <label class="form-label small">Status</label>
                         <select name="status" class="form-control">
                             <option value="">Todos</option>
-                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativos</option>
-                            <option value="desativado" {% if filtros.status == 'desativado' %}selected{% endif %}>Desligados</option>
+                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativo</option>
+                            <option value="desativado" {% if filtros.status == 'desativado' %}selected{% endif %}>Desligado</option>
                         </select>
                     </div>
                     
@@ -177,14 +214,14 @@
                                     </a>
                                     
                                     {% if pessoa.documento %}
-                                    <a href="{% url 'documento_protegido' pessoa.documento.pk %}" 
+                                    <a href="{% url 'documento_protegido' pessoa.pk %}" 
                                        class="btn btn-sm btn-outline-dark"
                                        title="Documentos"
                                        target="_blank">
                                         <i class="bi bi-file-pdf"></i>
                                     </a>
                                     {% else %}
-                                    <a href="{% url 'pessoa_documento' pessoa.pk %}" 
+                                    <a href="{% url 'pessoa_edit' pessoa.pk %}" 
                                        class="btn btn-sm btn-outline-secondary"
                                        title="Upload Documento">
                                         <i class="bi bi-cloud-upload"></i>

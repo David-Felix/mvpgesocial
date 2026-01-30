@@ -222,7 +222,18 @@ def pessoas_por_beneficio(request, beneficio_id):
     stats = pessoas_query.aggregate(
         ativos=Count('id', filter=Q(ativo=True)),
         desativados=Count('id', filter=Q(ativo=False)),
-        total=Count('id')
+        total=Count('id'),
+        total_mensal=Sum('valor_beneficio', filter=Q(ativo=True))
+    )
+
+        # Distribuição por faixa de valor (apenas deste benefício)
+    distribuicao_valor = pessoas_query.filter(ativo=True).aggregate(
+        ate_100=Count('id', filter=Q(valor_beneficio__lte=100)),
+        de_101_150=Count('id', filter=Q(valor_beneficio__gt=100, valor_beneficio__lte=150)),
+        de_151_200=Count('id', filter=Q(valor_beneficio__gt=150, valor_beneficio__lte=200)),
+        de_201_250=Count('id', filter=Q(valor_beneficio__gt=200, valor_beneficio__lte=250)),
+        de_251_300=Count('id', filter=Q(valor_beneficio__gt=250, valor_beneficio__lte=300)),
+        acima_300=Count('id', filter=Q(valor_beneficio__gt=300))
     )
     
     # Captura de Filtros
@@ -301,6 +312,8 @@ def pessoas_por_beneficio(request, beneficio_id):
             'total_ativos': stats['ativos'],
             'total_desativados': stats['desativados'],
             'total_geral': stats['total'],
+            'total_mensal': stats['total_mensal'] or 0,
+            'distribuicao_valor': distribuicao_valor,
             'por_pagina': len(pessoas_list),
             'filtros': {
                 'nome': f_nome,
@@ -332,6 +345,8 @@ def pessoas_por_beneficio(request, beneficio_id):
         'total_ativos': stats['ativos'],
         'total_desativados': stats['desativados'],
         'total_geral': stats['total'],
+        'total_mensal': stats['total_mensal'] or 0,
+        'distribuicao_valor': distribuicao_valor,
         'por_pagina': por_pagina,
         'filtros': {
             'nome': f_nome,
