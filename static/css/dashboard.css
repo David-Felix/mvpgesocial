@@ -409,7 +409,7 @@
 }
 
 .dist-mini-card .faixa-valor i {
-    font-size: 1.25rem;
+    font-size: 1rem;
     opacity: 0.7;
 }
 
@@ -444,3 +444,23 @@
 .barra-roxo { background: linear-gradient(90deg, #9f7aea, #805ad5); }
 .barra-rosa { background: linear-gradient(90deg, #ed64a6, #d53f8c); }
 .barra-turquesa { background: linear-gradient(90deg, #38b2ac, #319795); }
+
+/* ========== FORM PANEL (formulários de cadastro/edição) ========== */
+.form-panel {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.form-panel .card-header {
+    background: linear-gradient(135deg, #4a7cff 0%, #5a8cff 100%);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+}
+
+.form-panel .card-header i {
+    margin-right: 8px;
+}
