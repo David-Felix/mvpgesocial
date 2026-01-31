@@ -225,6 +225,9 @@ def pessoas_por_beneficio(request, beneficio_id):
         total=Count('id'),
         total_mensal=Sum('valor_beneficio', filter=Q(ativo=True))
     )
+    # Formatar total mensal
+    total_mensal = stats['total_mensal'] or 0
+    total_mensal_formatado = f"{total_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
         # Distribuição por faixa de valor (apenas deste benefício)
     distribuicao_valor = pessoas_query.filter(ativo=True).aggregate(
@@ -312,7 +315,7 @@ def pessoas_por_beneficio(request, beneficio_id):
             'total_ativos': stats['ativos'],
             'total_desativados': stats['desativados'],
             'total_geral': stats['total'],
-            'total_mensal': stats['total_mensal'] or 0,
+            'total_mensal': total_mensal_formatado,
             'distribuicao_valor': distribuicao_valor,
             'por_pagina': len(pessoas_list),
             'filtros': {
@@ -345,7 +348,7 @@ def pessoas_por_beneficio(request, beneficio_id):
         'total_ativos': stats['ativos'],
         'total_desativados': stats['desativados'],
         'total_geral': stats['total'],
-        'total_mensal': stats['total_mensal'] or 0,
+        'total_mensal': total_mensal_formatado,
         'distribuicao_valor': distribuicao_valor,
         'por_pagina': por_pagina,
         'filtros': {
@@ -733,7 +736,8 @@ def documento_protegido(request, pk):
     from django.conf import settings
     from urllib.parse import quote
     
-    documento = get_object_or_404(Documento, pk=pk)
+    pessoa = get_object_or_404(Pessoa, pk=pk)
+    documento = get_object_or_404(Documento, pessoa=pessoa)
     
     file_path = documento.arquivo.name
     full_path = os.path.join(settings.MEDIA_ROOT, file_path)
