@@ -43,5 +43,6 @@ urlpatterns = [
     # Ações em Massa
     path('beneficio/<int:beneficio_id>/memorando-massa/', views.gerar_memorando_massa, name='gerar_memorando_massa'),
     path('beneficio/<int:beneficio_id>/recibos-massa/', views.gerar_recibos_massa, name='gerar_recibos_massa'),
+    path('beneficio/<int:beneficio_id>/documentos-massa/', views.gerar_documentos_massa, name='gerar_documentos_massa'),
 
 ]

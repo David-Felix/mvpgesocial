@@ -298,6 +298,11 @@
                    target="_blank">
                     <i class="bi bi-receipt-cutoff"></i> Recibos em Massa
                 </a>
+                <a href="{% url 'gerar_documentos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
+                   class="btn btn-outline-dark" 
+                   target="_blank">
+                    <i class="bi bi-file-pdf"></i> Documentos em Massa
+                </a>
             </div>
             {% else %}
             <div class="text-center py-5">

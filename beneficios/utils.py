@@ -534,3 +534,59 @@ def gerar_recibos_massa_pdf(pessoas):
     c.save()
     buffer.seek(0)
     return buffer
+    
+def gerar_documentos_massa_pdf(pessoas):
+    """Gera PDF consolidado com documentos (2 vias, máx 4 páginas cada) usando disco"""
+    import tempfile
+    from PyPDF2 import PdfWriter, PdfReader
+    
+    # Usa arquivo temporário em disco
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        tmp_path = tmp_file.name
+    
+    writer = PdfWriter()
+    arquivos_abertos = []
+    
+    try:
+        for pessoa in pessoas:
+            arquivo_path = pessoa.documento.arquivo.path
+            
+            try:
+                pdf_file = open(arquivo_path, 'rb')
+                arquivos_abertos.append(pdf_file)
+                
+                reader = PdfReader(pdf_file)
+                total_paginas = min(len(reader.pages), 4)
+                
+                # 1ª via
+                for i in range(total_paginas):
+                    writer.add_page(reader.pages[i])
+                
+                # 2ª via
+                for i in range(total_paginas):
+                    writer.add_page(reader.pages[i])
+                    
+            except Exception:
+                raise Exception(f"Erro ao processar documento de {pessoa.nome_completo}. Arquivo pode estar corrompido.")
+        
+        # Escreve no arquivo temporário
+        with open(tmp_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        # Lê o arquivo final para retornar
+        with open(tmp_path, 'rb') as final_file:
+            buffer = BytesIO(final_file.read())
+        
+        return buffer
+        
+    finally:
+        # Fecha todos os arquivos abertos
+        for f in arquivos_abertos:
+            try:
+                f.close()
+            except:
+                pass
+        
+        # Remove arquivo temporário
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)

@@ -8,6 +8,7 @@ from .forms import PessoaForm, DocumentoForm
 from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
 from decimal import Decimal
+import os
 
 
 @login_required
@@ -754,3 +755,88 @@ def documento_protegido(request, pk):
     response['X-Accel-Redirect'] = f'/protected-media/{file_path_encoded}'
     
     return response
+@login_required
+def gerar_documentos_massa(request, beneficio_id):
+    """Gera documentos em massa (2 vias, máx 4 páginas) respeitando filtros - apenas ATIVOS"""
+    beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
+    
+    # Sempre filtra apenas ATIVOS
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, ativo=True).order_by('nome_completo')
+    
+    # Captura filtros da URL
+    f_nome = request.GET.get('nome', '').strip()
+    f_cpf = request.GET.get('cpf', '').strip()
+    f_valor = request.GET.get('valor', '').replace(',', '.')
+    f_pos_de = request.GET.get('id_de', '').strip()
+    f_pos_ate = request.GET.get('id_ate', '').strip()
+    
+    # Aplica filtros
+    if f_nome:
+        pessoas_query = pessoas_query.filter(nome_completo__icontains=f_nome)
+    
+    try:
+        if f_valor and float(f_valor) > 0:
+            pessoas_query = pessoas_query.filter(valor_beneficio=float(f_valor))
+    except ValueError:
+        pass
+    
+    # Filtro CPF
+    if f_cpf:
+        cpf_limpo = ''.join(filter(str.isdigit, f_cpf))
+        if len(cpf_limpo) >= 4:
+            ultimos_4 = cpf_limpo[-4:]
+            candidatos = pessoas_query.filter(cpf_ultimos_4=ultimos_4).only('id', 'cpf')
+            ids_validos = [p.pk for p in candidatos if cpf_limpo in ''.join(filter(str.isdigit, p.cpf))]
+            pessoas_query = pessoas_query.filter(pk__in=ids_validos)
+        else:
+            candidatos = pessoas_query.only('id', 'cpf')
+            ids_validos = [p.pk for p in candidatos if cpf_limpo in ''.join(filter(str.isdigit, p.cpf))]
+            pessoas_query = pessoas_query.filter(pk__in=ids_validos)
+    
+    # Filtro de posição
+    try:
+        if f_pos_de and f_pos_ate:
+            pos_de = int(f_pos_de)
+            pos_ate = int(f_pos_ate)
+            if pos_de >= 1 and pos_ate >= pos_de:
+                pessoas_query = pessoas_query[pos_de-1:pos_ate]
+        elif f_pos_de:
+            pos_de = int(f_pos_de)
+            if pos_de >= 1:
+                pessoas_query = pessoas_query[pos_de-1:]
+        elif f_pos_ate:
+            pos_ate = int(f_pos_ate)
+            pessoas_query = pessoas_query[:pos_ate]
+    except ValueError:
+        pass
+    
+    pessoas = list(pessoas_query.select_related('documento'))
+    
+    if not pessoas:
+        messages.error(request, 'Nenhuma pessoa ativa encontrada com os filtros aplicados!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+    
+    # Verifica se todas as pessoas têm documento E se arquivo existe no disco
+    pessoas_sem_doc = []
+    for p in pessoas:
+        if not hasattr(p, 'documento') or not p.documento or not p.documento.arquivo:
+            pessoas_sem_doc.append(p.nome_completo)
+        elif not os.path.exists(p.documento.arquivo.path):
+            pessoas_sem_doc.append(f"{p.nome_completo} (arquivo não encontrado)")
+    
+    if pessoas_sem_doc:
+        nomes = ', '.join(pessoas_sem_doc[:10])  # Limita a 10 nomes para não estourar a mensagem
+        if len(pessoas_sem_doc) > 10:
+            nomes += f' e mais {len(pessoas_sem_doc) - 10} pessoa(s)'
+        messages.error(request, f'As seguintes pessoas estão sem documento anexado: {nomes}')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+    
+    try:
+        from .utils import gerar_documentos_massa_pdf
+        pdf_buffer = gerar_documentos_massa_pdf(pessoas)
+        response = HttpResponse(pdf_buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="documentos_massa_{beneficio.nome}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Erro ao gerar documentos em massa: {str(e)}')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
