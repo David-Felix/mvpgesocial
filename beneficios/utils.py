@@ -189,7 +189,7 @@ def gerar_memorando_pdf(pessoa):
     y_header -= 0.4 * cm
     c.drawCentredString(width / 2, y_header, "PREFEITURA MUNICIPAL DE POCINHOS")
     y_header -= 0.4 * cm
-    c.drawCentredString(width / 2, y_header, "SECRETARIA MUNICIPAL DE ASSISTÊNCIA DE SOCIAL")
+    c.drawCentredString(width / 2, y_header, "SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL")
     
     # --- Título do Memorando ---
     y_header -= 1.2 * cm
