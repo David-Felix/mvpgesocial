@@ -7,118 +7,27 @@
     <title>{% block title %}Sistema de Benefícios{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    
+    <link rel="stylesheet" href="{% static 'css/layout_bars.css' %}">
     {% block extra_css %}{% endblock %}
-    <style>
-        :root {
-            --navbar-bg: #1a1d2e;
-            --sidebar-bg: #1e2139;
-            --sidebar-hover: #252a48;
-            --accent: #4a7cff;
-            --sidebar-width: 260px;
-        }
-        body {
-            overflow-x: hidden;
-        }
-        .navbar {
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);
-            background-color: var(--navbar-bg) !important;
-        }
-        .sidebar {
-            position: fixed;
-            top: 56px;
-            left: 0;
-            width: var(--sidebar-width);
-            height: calc(100vh - 56px);
-            background: var(--sidebar-bg);
-            padding-top: 1rem;
-            overflow-y: auto;
-            z-index: 100;
-            box-shadow: 2px 0 8px rgba(0,0,0,.1);
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.75);
-            padding: 0.8rem 1.5rem;
-            margin: 0.2rem 0.5rem;
-            border-radius: 6px;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-        .sidebar .nav-link:hover {
-            background: var(--sidebar-hover);
-            color: white;
-        }
-        .sidebar .nav-link.active {
-            background: var(--accent);
-            color: white;
-            border-left-color: transparent;
-        }
-        /* Submenu */
-        .sidebar .collapse .nav-link {
-            padding: 0.6rem 1rem 0.6rem 2.5rem;
-            margin: 0.1rem 0.5rem;
-            font-size: 0.9rem;
-        }
-        .sidebar .collapse .nav-link.active {
-            background: rgba(74, 124, 255, 0.2);
-            color: var(--accent);
-            border-left-color: var(--accent);
-            font-weight: 500;
-        }
-        .sidebar .nav-link i {
-            margin-right: 10px;
-        }
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 2rem;
-            min-height: calc(100vh - 56px);
-            background: #f8f9fa;
-        }
-        .card {
-            box-shadow: 0 2px 4px rgba(0,0,0,.08);
-            border: none;
-            margin-bottom: 1.5rem;
-            border-radius: 8px;
-        }
-        .btn-primary {
-            background-color: #27ae60;
-            border-color: #27ae60;
-        }
-        .btn-primary:hover {
-            background-color: #229954;
-            border-color: #229954;
-        }
-        @media (max-width: 768px) {
-            .sidebar {
-                left: -260px;
-            }
-            .sidebar.show {
-                left: 0;
-            }
-            .main-content {
-                margin-left: 0;
-            }
-        }
-    </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
-            <button class="btn btn-link text-white d-md-none" id="sidebarToggle">
+            <button class="btn btn-link text-white d-lg-none p-0 me-2" id="sidebarToggle">
                 <i class="bi bi-list fs-4"></i>
             </button>
             <a class="navbar-brand" href="{% url 'dashboard' %}">
                 <i class="bi bi-wallet2"></i> GeSocial - Sistema de Benefícios
             </a>
-            <div class="ms-auto d-flex align-items-center">
-                <span class="text-white me-3">
+            <div class="navbar-user ms-auto">
+                <span class="navbar-user-name">
                     <i class="bi bi-person-circle"></i> {{ user.username }}
                 </span>
-                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                <form method="post" action="{% url 'logout' %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-light btn-sm">
-                        <i class="bi bi-box-arrow-right"></i> Sair
+                        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">Sair</span>
                     </button>
                 </form>
             </div>
@@ -139,7 +48,7 @@
             <a class="nav-link" data-bs-toggle="collapse" href="#submenuBeneficiarios" role="button" aria-expanded="false">
                 <i class="bi bi-people"></i> Listar Beneficiários
             </a>
-           <div class="collapse" id="submenuBeneficiarios">
+            <div class="collapse" id="submenuBeneficiarios">
                 <div class="ps-4">
                     {% for beneficio in beneficios_menu %}
                     <a class="nav-link" href="{% url 'pessoas_por_beneficio' beneficio.id %}">
@@ -156,6 +65,9 @@
             <a class="nav-link" href="{% url 'beneficios_list' %}">
                 <i class="bi bi-gear"></i> Gerenciar Benefícios
             </a>
+            <a class="nav-link" href="{% url 'memorandos_lista' %}">
+                <i class="bi bi-file-earmark-text"></i> Histórico de Memorandos
+            </a>
             {% if perms.auth.change_user or user.is_superuser %}
             <a class="nav-link" href="{% url 'usuarios_list' %}">
                 <i class="bi bi-people-fill"></i> Gerenciar Usuários
@@ -171,14 +83,18 @@
                 <i class="bi bi-cloud-upload"></i> Backup
             </a>
             {% endif %}
+            
+            <hr>
+            
             <a class="nav-link" href="{% url 'sobre' %}"> 
                 <i class="bi bi-info-circle"></i> Sobre
             </a>
             <a class="nav-link" href="#"> 
                 <i class="bi bi-question-circle"></i> Ajuda
             </a>
-            <hr class="text-white-50 mx-3">
+            
             {% if user.is_superuser %}
+            <hr>
             <a class="nav-link" href="/admin/">
                 <i class="bi bi-shield-lock"></i> Painel Admin
             </a>
@@ -187,7 +103,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="main-content" style="margin-top: 56px;">
+    <div class="main-content">
         <!-- Messages -->
         {% if messages %}
         {% for message in messages %}
@@ -208,6 +124,17 @@
             document.getElementById('sidebar').classList.toggle('show');
         });
         
+        // Fechar sidebar ao clicar fora (mobile)
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            if (window.innerWidth <= 768 && sidebar.classList.contains('show')) {
+                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.remove('show');
+                }
+            }
+        });
+        
         // Marcar menu ativo
         document.addEventListener('DOMContentLoaded', function() {
             const currentPath = window.location.pathname;
@@ -216,15 +143,12 @@
             navLinks.forEach(link => {
                 const href = link.getAttribute('href');
                 
-                // Verifica se é a página atual
                 if (href && currentPath === href) {
                     link.classList.add('active');
                     
-                    // Se estiver dentro de um collapse, abre o submenu
                     const collapse = link.closest('.collapse');
                     if (collapse) {
                         collapse.classList.add('show');
-                        // Marca também o link pai
                         const parentLink = document.querySelector(`[href="#${collapse.id}"]`);
                         if (parentLink) {
                             parentLink.classList.add('active');
@@ -232,7 +156,6 @@
                     }
                 }
                 
-                // Verifica se a URL contém parte do href (para rotas dinâmicas)
                 if (href && href !== '#' && currentPath.includes(href) && href.length > 1) {
                     link.classList.add('active');
                     

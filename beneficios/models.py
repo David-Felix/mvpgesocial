@@ -99,3 +99,45 @@ class PermissoesGerais(models.Model):
             ("pode_ver_configuracoes", "Pode acessar as configurações do sistema"),
             ("pode_fazer_backup", "Pode realizar e baixar backups"),
         ]
+
+class Memorando(models.Model):
+    """Registro de memorandos gerados"""
+    numero = models.CharField(max_length=12, unique=True)  # 00001/2026
+    ano = models.PositiveIntegerField()
+    sequencia = models.PositiveIntegerField()
+    beneficio = models.ForeignKey(Beneficio, on_delete=models.PROTECT)
+    conta_pagadora = models.CharField(max_length=200, blank=True)
+    valor_total = models.DecimalField(max_digits=12, decimal_places=2)
+    quantidade_pessoas = models.PositiveIntegerField()
+    usuario = models.ForeignKey(User, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Memorando'
+        verbose_name_plural = 'Memorandos'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['ano', 'sequencia'], name='unique_sequencia_ano')
+        ]
+    
+    def __str__(self):
+        return f"Memorando {self.numero} - {self.beneficio.nome}"
+
+
+class MemorandoPessoa(models.Model):
+    """Snapshot dos dados das pessoas no momento da geração do memorando"""
+    memorando = models.ForeignKey(Memorando, on_delete=models.CASCADE, related_name='pessoas')
+    pessoa = models.ForeignKey(Pessoa, on_delete=models.SET_NULL, null=True)  # Referência original
+    # Snapshot dos dados (imutáveis)
+    nome_completo = models.CharField(max_length=200)
+    cpf = models.CharField(max_length=14)
+    valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2)
+    ordem = models.PositiveIntegerField()  # Ordem no memorando
+    
+    class Meta:
+        verbose_name = 'Pessoa do Memorando'
+        verbose_name_plural = 'Pessoas do Memorando'
+        ordering = ['ordem']
+    
+    def __str__(self):
+        return f"{self.nome_completo} - {self.memorando.numero}"

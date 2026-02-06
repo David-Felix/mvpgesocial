@@ -48,4 +48,8 @@ urlpatterns = [
     # Sobre
     path('sobre/', views.sobre, name='sobre'),
 
+    # Histórico de Memorandos
+    path('memorandos/', views.memorandos_lista, name='memorandos_lista'),
+    path('memorandos/<int:pk>/segunda-via/', views.memorando_segunda_via, name='memorando_segunda_via'),
+
 ]

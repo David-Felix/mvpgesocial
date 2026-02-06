@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage
-from .models import Pessoa, Beneficio, Documento
+from .models import Pessoa, Beneficio, Documento, Memorando, MemorandoPessoa
+from .services import registrar_memorando
 from .forms import PessoaForm, DocumentoForm
 from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
@@ -557,18 +558,30 @@ def gerar_documentos(request, pk):
 
 @login_required
 def gerar_memorando(request, pk):
-    """Gera memorando com nome e CPF"""
+    """Gera memorando individual com registro no histórico"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
     
     if not pessoa.ativo:
-        messages.error(request, 'Não é possível gerar memorando de pessoa desativada!')
+        messages.error(request, 'Não é possível gerar memorando de pessoa desligada!')
         return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     
     try:
-        from .utils import gerar_memorando_pdf
-        pdf_buffer = gerar_memorando_pdf(pessoa)
+        # Registrar no histórico
+        pessoas_dados = [{
+            'pessoa': pessoa,
+            'nome_completo': pessoa.nome_completo,
+            'cpf': pessoa.cpf,
+            'valor_beneficio': pessoa.valor_beneficio,
+            'ordem': 1
+        }]
+        
+        memorando = registrar_memorando(pessoa.beneficio, pessoas_dados, request.user)
+        
+        # Gerar PDF usando dados do snapshot
+        from .utils import gerar_memorando_segunda_via_pdf
+        pdf_buffer = gerar_memorando_segunda_via_pdf(memorando)
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="memorando_{pessoa.cpf}.pdf"'
+        response['Content-Disposition'] = f'inline; filename="memorando_{memorando.numero.replace("/", "-")}.pdf"'
         return response
     except Exception as e:
         messages.error(request, f'Erro ao gerar memorando: {str(e)}')
@@ -577,7 +590,7 @@ def gerar_memorando(request, pk):
 
 @login_required
 def gerar_memorando_massa(request, beneficio_id):
-    """Gera memorando em massa respeitando os filtros aplicados"""
+    """Gera memorando em massa com registro no histórico"""
     beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
     
     # Aplica os mesmos filtros da listagem
@@ -643,10 +656,25 @@ def gerar_memorando_massa(request, beneficio_id):
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
     
     try:
-        from .utils import gerar_memorando_massa_pdf
-        pdf_buffer = gerar_memorando_massa_pdf(beneficio, pessoas)
+        # Preparar dados para snapshot
+        pessoas_dados = []
+        for idx, pessoa in enumerate(pessoas, 1):
+            pessoas_dados.append({
+                'pessoa': pessoa,
+                'nome_completo': pessoa.nome_completo,
+                'cpf': pessoa.cpf,
+                'valor_beneficio': pessoa.valor_beneficio,
+                'ordem': idx
+            })
+        
+        # Registrar no histórico
+        memorando = registrar_memorando(beneficio, pessoas_dados, request.user)
+        
+        # Gerar PDF usando dados do snapshot
+        from .utils import gerar_memorando_segunda_via_pdf
+        pdf_buffer = gerar_memorando_segunda_via_pdf(memorando)
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="memorando_massa_{beneficio.nome}.pdf"'
+        response['Content-Disposition'] = f'inline; filename="memorando_{memorando.numero.replace("/", "-")}.pdf"'
         return response
     except Exception as e:
         messages.error(request, f'Erro ao gerar memorando em massa: {str(e)}')
@@ -875,3 +903,71 @@ def sobre(request):
         'total_programas': Beneficio.objects.filter(ativo=True).count(),
     }
     return render(request, 'beneficios/sobre.html', context)
+
+@login_required
+def memorandos_lista(request):
+    """Lista histórico de memorandos com filtros"""
+    memorandos_query = Memorando.objects.select_related('beneficio', 'usuario').order_by('-created_at')
+    
+    # Filtros
+    f_data_inicio = request.GET.get('data_inicio', '').strip()
+    f_data_fim = request.GET.get('data_fim', '').strip()
+    f_beneficios = request.GET.getlist('beneficio')
+    
+    if f_data_inicio:
+        try:
+            from datetime import datetime
+            data_inicio = datetime.strptime(f_data_inicio, '%Y-%m-%d')
+            memorandos_query = memorandos_query.filter(created_at__date__gte=data_inicio)
+        except ValueError:
+            pass
+    
+    if f_data_fim:
+        try:
+            from datetime import datetime
+            data_fim = datetime.strptime(f_data_fim, '%Y-%m-%d')
+            memorandos_query = memorandos_query.filter(created_at__date__lte=data_fim)
+        except ValueError:
+            pass
+    
+    if f_beneficios:
+        # Validar que são IDs numéricos
+        beneficios_ids = [int(b) for b in f_beneficios if b.isdigit()]
+        if beneficios_ids:
+            memorandos_query = memorandos_query.filter(beneficio_id__in=beneficios_ids)
+    
+    # Paginação
+    paginator = Paginator(memorandos_query, 20)
+    page_number = request.GET.get('page', 1)
+    memorandos = paginator.get_page(page_number)
+    
+    # Benefícios para o filtro
+    beneficios = Beneficio.objects.filter(ativo=True).order_by('nome')
+    
+    context = {
+        'memorandos': memorandos,
+        'beneficios': beneficios,
+        'filtros': {
+            'data_inicio': f_data_inicio,
+            'data_fim': f_data_fim,
+            'beneficios': f_beneficios,
+        }
+    }
+    
+    return render(request, 'beneficios/memorandos_lista.html', context)
+
+
+@login_required
+def memorando_segunda_via(request, pk):
+    """Gera segunda via do memorando (PDF idêntico ao original)"""
+    memorando = get_object_or_404(Memorando, pk=pk)
+    
+    try:
+        from .utils import gerar_memorando_segunda_via_pdf
+        pdf_buffer = gerar_memorando_segunda_via_pdf(memorando)
+        response = HttpResponse(pdf_buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="memorando_{memorando.numero.replace("/", "-")}_2via.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Erro ao gerar segunda via: {str(e)}')
+        return redirect('memorandos_lista')
