@@ -464,3 +464,34 @@
 .form-panel .card-header i {
     margin-right: 8px;
 }
+
+/* ========== MODAL SOBRE ========== */
+.modal-sobre-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-sobre-body {
+    padding: 2rem 3rem;
+}
+
+.modal-sobre-logo {
+    max-width: 200px;
+}
+
+.modal-sobre-info {
+    font-size: 0.9rem;
+}
+
+.modal-sobre-info p {
+    margin-bottom: 0.5rem;
+}
+
+.modal-sobre-aviso {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.7rem;
+    line-height: 1.5;
+}

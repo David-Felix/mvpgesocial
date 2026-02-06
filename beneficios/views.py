@@ -861,3 +861,17 @@ def gerar_documentos_massa(request, beneficio_id):
     except Exception as e:
         messages.error(request, f'Erro ao gerar documentos: {str(e)}')
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+
+@login_required
+def sobre(request):
+    """Retorna dados para o modal Sobre"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    context = {
+        'versao': '1.0.0',
+        'data_compilacao': '06/02/2026',
+        'total_usuarios': '10',
+        'total_programas': Beneficio.objects.filter(ativo=True).count(),
+    }
+    return render(request, 'beneficios/sobre.html', context)

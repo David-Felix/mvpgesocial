@@ -1,0 +1,46 @@
+{% extends 'beneficios/base.html' %}
+{% load static %}
+
+{% block title %}Sobre - GeSocial{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="modal fade show" id="modalSobre" tabindex="-1" style="display: block; background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+        <div class="modal-content modal-sobre-content">
+            <div class="modal-body modal-sobre-body">
+                
+                <div class="text-center mb-4">
+                    <img src="{% static 'images/gesocial_logo.png' %}" alt="GeSocial" class="modal-sobre-logo">
+                </div>
+                
+                <div class="modal-sobre-info mb-3">
+                    <p><span class="text-muted">Software:</span> GeSocial - Sistema de Gestão da Assistência Social</p>
+                    <p><span class="text-muted">Versão:</span> {{ versao }}</p>
+                    <p><span class="text-muted">Data da compilação:</span> {{ data_compilacao }}</p>
+                    <p><span class="text-muted">Usuários:</span> {{ total_usuarios }}</p>
+                    <p><span class="text-muted">Programas gerenciáveis:</span> {{ total_programas }}</p>
+                    <p><span class="text-muted">Licenciado para:</span> Sec. Mun. de Assistência Social de Pocinhos/PB</p>
+                </div>
+                
+                <div class="modal-sobre-aviso text-muted mb-3">
+                    <strong>Atenção:</strong> Este programa é protegido por leis de direitos autorais. 
+                    A reprodução ou distribuição não autorizada deste programa, ou de qualquer parte do mesmo, 
+                    pode resultar em penalidades civis e criminais severas, e será processada até a extensão 
+                    máxima permitida por lei.
+                </div>
+                
+                <div class="text-center">
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary px-4">
+                        <i class="bi bi-x-lg"></i> Fechar
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
