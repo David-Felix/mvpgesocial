@@ -243,7 +243,7 @@ def pessoas_por_beneficio(request, beneficio_id):
     # Captura de Filtros
     f_nome = request.GET.get('nome', '').strip()
     f_cpf = request.GET.get('cpf', '').strip()
-    f_status = request.GET.get('status', '')
+    f_status = request.GET.get('status', 'ativo')
     f_valor = request.GET.get('valor', '').replace(',', '.')
     f_pos_de = request.GET.get('id_de', '').strip()
     f_pos_ate = request.GET.get('id_ate', '').strip()
@@ -755,68 +755,89 @@ def documento_protegido(request, pk):
     response['X-Accel-Redirect'] = f'/protected-media/{file_path_encoded}'
     
     return response
+
 @login_required
 def gerar_documentos_massa(request, beneficio_id):
-    """Gera documentos em massa (2 vias, máx 4 páginas) respeitando filtros - apenas ATIVOS"""
-    beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
+    """
+    Gera documentos em massa
+    """
+    import os
+    from django.http import HttpResponse
+    from django.shortcuts import get_object_or_404, redirect
+    from django.contrib import messages
+    from .models import Beneficio, Pessoa
+
+    # 1.Verifica se o benefício existe
+    beneficio = get_object_or_404(Beneficio, pk=beneficio_id )
     
-    # Sempre filtra apenas ATIVOS
-    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, ativo=True).order_by('nome_completo')
-    
-    # Captura filtros da URL
+    # 2. Captura de Filtros da URL 
+    f_status = request.GET.get('status', '').strip().lower()
     f_nome = request.GET.get('nome', '').strip()
     f_cpf = request.GET.get('cpf', '').strip()
     f_valor = request.GET.get('valor', '').replace(',', '.')
     f_pos_de = request.GET.get('id_de', '').strip()
     f_pos_ate = request.GET.get('id_ate', '').strip()
+
+   
+    # Se o status for 'desativado' OU se estiver vazio (Todos), o sistema BARRA.
+    if f_status != 'ativo':
+        messages.error(request, 'Não existem pessoas ativas para gerar o PDF com os filtros aplicados!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+
+    # 4. BLOQUEIO DE MANIPULAÇÃO DE TEXTO 
+    if (f_pos_de and not f_pos_de.isdigit()) or (f_pos_ate and not f_pos_ate.isdigit()):
+        messages.error(request, 'Parâmetros de posição inválidos detectados!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+
+    # 5. Query de Ativos (Usando o campo Boolean 'ativo' do seu Model)
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, ativo=True).order_by('nome_completo')
     
-    # Aplica filtros
+    # Filtros Adicionais
     if f_nome:
         pessoas_query = pessoas_query.filter(nome_completo__icontains=f_nome)
     
-    try:
-        if f_valor and float(f_valor) > 0:
+    if f_valor:
+        try:
             pessoas_query = pessoas_query.filter(valor_beneficio=float(f_valor))
-    except ValueError:
-        pass
+        except ValueError:
+            pass
     
-    # Filtro CPF
     if f_cpf:
         cpf_limpo = ''.join(filter(str.isdigit, f_cpf))
-        if len(cpf_limpo) >= 4:
-            ultimos_4 = cpf_limpo[-4:]
-            candidatos = pessoas_query.filter(cpf_ultimos_4=ultimos_4).only('id', 'cpf')
+        if cpf_limpo:
+            if len(cpf_limpo) >= 4:
+                ultimos_4 = cpf_limpo[-4:]
+                candidatos = pessoas_query.filter(cpf_ultimos_4=ultimos_4).only('id', 'cpf')
+            else:
+                candidatos = pessoas_query.only('id', 'cpf')
             ids_validos = [p.pk for p in candidatos if cpf_limpo in ''.join(filter(str.isdigit, p.cpf))]
             pessoas_query = pessoas_query.filter(pk__in=ids_validos)
-        else:
-            candidatos = pessoas_query.only('id', 'cpf')
-            ids_validos = [p.pk for p in candidatos if cpf_limpo in ''.join(filter(str.isdigit, p.cpf))]
-            pessoas_query = pessoas_query.filter(pk__in=ids_validos)
     
-    # Filtro de posição
-    try:
-        if f_pos_de and f_pos_ate:
-            pos_de = int(f_pos_de)
-            pos_ate = int(f_pos_ate)
-            if pos_de >= 1 and pos_ate >= pos_de:
-                pessoas_query = pessoas_query[pos_de-1:pos_ate]
-        elif f_pos_de:
-            pos_de = int(f_pos_de)
-            if pos_de >= 1:
-                pessoas_query = pessoas_query[pos_de-1:]
-        elif f_pos_ate:
-            pos_ate = int(f_pos_ate)
-            pessoas_query = pessoas_query[:pos_ate]
-    except ValueError:
-        pass
-    
-    pessoas = list(pessoas_query.select_related('documento'))
-    
-    if not pessoas:
+    # 6. Validação de Intervalo e Posição
+    total_ativos = pessoas_query.count()
+    if total_ativos == 0:
         messages.error(request, 'Nenhuma pessoa ativa encontrada com os filtros aplicados!')
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+
+    try:
+        pos_de = int(f_pos_de) if f_pos_de else 1
+        pos_ate = int(f_pos_ate) if f_pos_ate else total_ativos
+        
+        if pos_de < 1 or pos_de > total_ativos or pos_de > pos_ate:
+            messages.error(request, 'Intervalo de posições inválido!')
+            return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+            
+        pessoas_query = pessoas_query[pos_de-1:min(pos_ate, total_ativos)]
+    except (ValueError, TypeError):
+        pass
+
+    # 7. Verificação Final e Documentos
+    pessoas = list(pessoas_query.select_related('documento'))
+    if not pessoas:
+        messages.error(request, 'Nenhuma pessoa ativa encontrada!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
     
-    # Verifica se todas as pessoas têm documento E se arquivo existe no disco
+    # Validação de arquivos físicos no disco
     pessoas_sem_doc = []
     for p in pessoas:
         if not hasattr(p, 'documento') or not p.documento or not p.documento.arquivo:
@@ -825,18 +846,18 @@ def gerar_documentos_massa(request, beneficio_id):
             pessoas_sem_doc.append(f"{p.nome_completo} (arquivo não encontrado)")
     
     if pessoas_sem_doc:
-        nomes = ', '.join(pessoas_sem_doc[:10])  # Limita a 10 nomes para não estourar a mensagem
-        if len(pessoas_sem_doc) > 10:
-            nomes += f' e mais {len(pessoas_sem_doc) - 10} pessoa(s)'
-        messages.error(request, f'As seguintes pessoas estão sem documento anexado: {nomes}')
+        nomes = ', '.join(pessoas_sem_doc[:10])
+        messages.error(request, f'Existem pessoas sem documento anexado: {nomes}')
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
     
+    # 8. Geração do PDF (Chama seu utils.py original)
     try:
         from .utils import gerar_documentos_massa_pdf
         pdf_buffer = gerar_documentos_massa_pdf(pessoas)
-        response = HttpResponse(pdf_buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="documentos_massa_{beneficio.nome}.pdf"'
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="documentos_massa_{beneficio.id}.pdf"'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         return response
     except Exception as e:
-        messages.error(request, f'Erro ao gerar documentos em massa: {str(e)}')
+        messages.error(request, f'Erro ao gerar documentos: {str(e)}')
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
