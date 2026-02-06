@@ -495,3 +495,12 @@
     font-size: 0.7rem;
     line-height: 1.5;
 }
+/* ========== ÍCONES SELETOR (beneficio_form) ========== */
+.icon-selector {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}

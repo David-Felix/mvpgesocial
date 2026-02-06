@@ -1,18 +1,19 @@
-<!-- beneficio_form.html -->
-
 {% extends 'beneficios/base.html' %}
+{% load static %}
 
 {% block title %}{{ titulo }} - Sistema de Benefícios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-gear-fill"></i> {{ titulo }}
-                    </h4>
+            <div class="card form-panel">
+                <div class="card-header">
+                    <i class="bi bi-gear-fill"></i> {{ titulo }}
                 </div>
                 <div class="card-body">
                     <form method="post">
@@ -29,56 +30,51 @@
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> Nome que identifica o benefício
                             </div>
-                        </div> 
+                        </div>
+                        
                         <div class="mb-3">
                             <label class="form-label">Ícone do Benefício</label>
-                            <div class="row">
-                                <div class="col-4 col-md-2 mb-3">
+                            <div class="d-flex flex-wrap gap-2">
+                                <div>
                                     <input type="radio" class="btn-check" name="icone" id="icon1" value="bi-bus-front" 
                                            {% if beneficio.icone == 'bi-bus-front' %}checked{% endif %} required>
-                                    <label class="btn btn-outline-primary w-100 text-center" for="icon1">
-                                        <i class="bi bi-bus-front d-block" style="font-size: 2rem;"></i>
-                                        <small>Ônibus</small>
+                                    <label class="btn btn-outline-primary icon-selector" for="icon1">
+                                        <i class="bi bi-bus-front"></i>
                                     </label>
                                 </div>
-                                <div class="col-4 col-md-2 mb-3">
+                                <div>
                                     <input type="radio" class="btn-check" name="icone" id="icon2" value="bi-cash-coin"
                                            {% if beneficio.icone == 'bi-cash-coin' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary w-100 text-center" for="icon2">
-                                        <i class="bi bi-cash-coin d-block" style="font-size: 2rem;"></i>
-                                        <small>Moeda</small>
+                                    <label class="btn btn-outline-primary icon-selector" for="icon2">
+                                        <i class="bi bi-cash-coin"></i>
                                     </label>
                                 </div>
-                                <div class="col-4 col-md-2 mb-3">
+                                <div>
                                     <input type="radio" class="btn-check" name="icone" id="icon3" value="bi-calendar-event"
                                            {% if beneficio.icone == 'bi-calendar-event' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary w-100 text-center" for="icon3">
-                                        <i class="bi bi-calendar-event d-block" style="font-size: 2rem;"></i>
-                                        <small>Único</small>
+                                    <label class="btn btn-outline-primary icon-selector" for="icon3">
+                                        <i class="bi bi-calendar-event"></i>
                                     </label>
                                 </div>
-                                <div class="col-4 col-md-2 mb-3">
+                                <div>
                                     <input type="radio" class="btn-check" name="icone" id="icon4" value="bi-hourglass-split"
                                            {% if beneficio.icone == 'bi-hourglass-split' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary w-100 text-center" for="icon4">
-                                        <i class="bi bi-hourglass-split d-block" style="font-size: 2rem;"></i>
-                                        <small>Temporário</small>
+                                    <label class="btn btn-outline-primary icon-selector" for="icon4">
+                                        <i class="bi bi-hourglass-split"></i>
                                     </label>
                                 </div>
-                                <div class="col-4 col-md-2 mb-3">
+                                <div>
                                     <input type="radio" class="btn-check" name="icone" id="icon5" value="bi-cart"
                                            {% if beneficio.icone == 'bi-cart' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary w-100 text-center" for="icon5">
-                                        <i class="bi bi-cart d-block" style="font-size: 2rem;"></i>
-                                        <small>Mercado</small>
+                                    <label class="btn btn-outline-primary icon-selector" for="icon5">
+                                        <i class="bi bi-cart"></i>
                                     </label>
                                 </div>
-                                <div class="col-4 col-md-2 mb-3">
+                                <div>
                                     <input type="radio" class="btn-check" name="icone" id="icon6" value="bi-heart-pulse"
                                            {% if beneficio.icone == 'bi-heart-pulse' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary w-100 text-center" for="icon6">
-                                        <i class="bi bi-heart-pulse d-block" style="font-size: 2rem;"></i>
-                                        <small>Saúde</small>
+                                    <label class="btn btn-outline-primary icon-selector" for="icon6">
+                                        <i class="bi bi-heart-pulse"></i>
                                     </label>
                                 </div>
                             </div>
@@ -86,6 +82,7 @@
                                 <i class="bi bi-info-circle"></i> Escolha o ícone que representa o benefício
                             </div>
                         </div>
+                        
                         <div class="mb-3">
                             <label class="form-label">Conta Pagadora</label>
                             <textarea name="conta_pagadora" 
