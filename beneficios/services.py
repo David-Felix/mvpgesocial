@@ -27,7 +27,10 @@ def registrar_memorando(beneficio, pessoas_dados, usuario):
     Returns:
         objeto Memorando criado
     """
+    from .models import ConfiguracaoGeral
+    
     numero, ano, sequencia = gerar_numero_memorando()
+    config = ConfiguracaoGeral.get_config()
     
     valor_total = sum(p['valor_beneficio'] for p in pessoas_dados)
     conta_pagadora = getattr(beneficio, 'conta_pagadora', '')
@@ -41,7 +44,15 @@ def registrar_memorando(beneficio, pessoas_dados, usuario):
             conta_pagadora=conta_pagadora,
             valor_total=valor_total,
             quantidade_pessoas=len(pessoas_dados),
-            usuario=usuario
+            usuario=usuario,
+            # Snapshot das configurações
+            secretaria_nome=config.secretaria_nome,
+            secretaria_cargo=config.secretaria_cargo,
+            financas_nome=config.financas_nome,
+            financas_cargo=config.financas_cargo,
+            email_institucional=config.email_institucional,
+            endereco=config.endereco,
+            cep=config.cep,
         )
         
         # Criar snapshot de cada pessoa

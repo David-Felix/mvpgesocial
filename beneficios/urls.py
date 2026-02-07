@@ -36,9 +36,6 @@ urlpatterns = [
     path('beneficios/novo/', views.beneficio_create, name='beneficio_create'),
     path('beneficios/<int:pk>/editar/', views.beneficio_edit_form, name='beneficio_edit_form'),
     path('beneficios/<int:pk>/toggle/', views.beneficio_toggle, name='beneficio_toggle'),
-    
-    # Beneficios
-    path('beneficio/<int:pk>/editar/', views.beneficio_edit, name='beneficio_edit'),
 
     # Ações em Massa
     path('beneficio/<int:beneficio_id>/memorando-massa/', views.gerar_memorando_massa, name='gerar_memorando_massa'),
@@ -51,5 +48,8 @@ urlpatterns = [
     # Histórico de Memorandos
     path('memorandos/', views.memorandos_lista, name='memorandos_lista'),
     path('memorandos/<int:pk>/segunda-via/', views.memorando_segunda_via, name='memorando_segunda_via'),
+
+    # Configurações Gerais
+    path('configuracoes/', views.configuracoes_gerais, name='configuracoes_gerais'),
 
 ]

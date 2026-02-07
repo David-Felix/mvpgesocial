@@ -111,6 +111,14 @@ class Memorando(models.Model):
     quantidade_pessoas = models.PositiveIntegerField()
     usuario = models.ForeignKey(User, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Salva o secretário, cargo e demais informações das configurações do sistema para 2 via do memorando
+    secretaria_nome = models.CharField(max_length=100, blank=True)
+    secretaria_cargo = models.CharField(max_length=100, blank=True)
+    financas_nome = models.CharField(max_length=100, blank=True)
+    financas_cargo = models.CharField(max_length=100, blank=True)
+    email_institucional = models.EmailField(blank=True)
+    endereco = models.CharField(max_length=200, blank=True)
+    cep = models.CharField(max_length=10, blank=True)
     
     class Meta:
         verbose_name = 'Memorando'
@@ -140,3 +148,62 @@ class MemorandoPessoa(models.Model):
     
     def __str__(self):
         return f"{self.nome_completo} - {self.memorando.numero}"
+
+class ConfiguracaoGeral(models.Model):
+    """Configurações gerais do sistema (singleton)"""
+    
+    # Secretaria de Assistência Social (quem assina)
+    secretaria_nome = models.CharField(
+        max_length=100, 
+        default='Zélia Maria Matias e Silva',
+        verbose_name='Nome do(a) Secretário(a)'
+    )
+    secretaria_cargo = models.CharField(
+        max_length=100, 
+        default='Secretária Adjunta de Assistência Social',
+        verbose_name='Cargo'
+    )
+    
+    # Secretaria de Finanças (destinatário)
+    financas_nome = models.CharField(
+        max_length=100, 
+        default='Carlos Roberto Alves Filho',
+        verbose_name='Nome do Secretário de Finanças'
+    )
+    financas_cargo = models.CharField(
+        max_length=100, 
+        default='Secretário de Finanças',
+        verbose_name='Cargo'
+    )
+    
+    # Rodapé
+    email_institucional = models.EmailField(
+        default='assistenciasocialpocinhos@gmail.com',
+        verbose_name='E-mail institucional'
+    )
+    endereco = models.CharField(
+        max_length=200, 
+        default='Rua Pç. Pres. Getúlio Vargas, 57, Centro',
+        verbose_name='Endereço'
+    )
+    cep = models.CharField(
+        max_length=10, 
+        default='58150-000',
+        verbose_name='CEP'
+    )
+    
+    class Meta:
+        verbose_name = 'Configuração Geral'
+        verbose_name_plural = 'Configurações Gerais'
+    
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_config(cls):
+        config, _ = cls.objects.get_or_create(pk=1)
+        return config
+    
+    def __str__(self):
+        return "Configurações Gerais"

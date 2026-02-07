@@ -167,354 +167,7 @@ def gerar_recibo_paginas_separadas(pessoa):
     c.save()
     buffer.seek(0)
     return buffer
-
-def gerar_memorando_pdf(pessoa):
-    """Gera memorando individual com mesmo estilo do memorando em massa"""
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    margin = 2 * cm
-    
-    # --- Cabeçalho Oficial ---
-    y_header = height - 1.5 * cm
-    caminho_brasao = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'brasao.jpg')
-    if caminho_brasao:
-        c.drawImage(caminho_brasao, (width/2) - 0.75*cm, y_header - 1.5*cm, width=1.5*cm, height=1.5*cm, mask='auto')
-        y_header -= 2.5 * cm
-    else:
-        y_header -= 1.0 * cm
-        
-    c.setFont("Helvetica-Bold", 11)
-    c.drawCentredString(width / 2, y_header, "ESTADO DA PARAÍBA")
-    y_header -= 0.4 * cm
-    c.drawCentredString(width / 2, y_header, "PREFEITURA MUNICIPAL DE POCINHOS")
-    y_header -= 0.4 * cm
-    c.drawCentredString(width / 2, y_header, "SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL")
-    
-    # --- Título do Memorando ---
-    y_header -= 1.2 * cm
-    beneficio = pessoa.beneficio
-    num_memo = getattr(beneficio, 'numero_memorando', '4092/2025')
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width / 2, y_header, f"M E M O R A N D O Nº. {num_memo}")
-    
-    # --- Quadro de Informações (DE, PARA, ASSUNTO) ---
-    y_quadro_top = y_header - 0.8 * cm
-    quadro_height = 3.2 * cm
-    c.setLineWidth(1)
-    c.setStrokeColor(colors.navy)
-    c.rect(margin, y_quadro_top - quadro_height, width - 2 * margin, quadro_height)
-    c.setStrokeColor(colors.black)
-    
-    y_row1 = y_quadro_top - 0.7 * cm
-    y_row2 = y_quadro_top - 1.4 * cm
-    y_row3 = y_quadro_top - 2.6 * cm
-    
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(colors.navy)
-    c.drawString(margin + 0.4 * cm, y_row1, "DE:")
-    c.setFillColor(colors.navy)
-    c.drawString(margin + 0.4 * cm, y_row2, "PARA:")
-    c.setFillColor(colors.black)
-    c.drawString(margin + 0.4 * cm, y_row3, "ASSUNTO:")
-    
-    c.setFont("Helvetica", 10)
-    c.drawString(margin + 3 * cm, y_row1, "SECRETARIA DE ASSISTÊNCIA SOCIAL")
-    
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(colors.navy)
-    c.drawString(margin + 3 * cm, y_row2, "SECRETARIA DE FINANÇAS")
-    c.setFont("Helvetica", 9)
-    c.drawString(margin + 3 * cm, y_row2 - 0.5 * cm, "Att: Sr. Carlos Roberto Alves Filho – Secretário de Finanças")
-    
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(margin + 3 * cm, y_row3, "Envio de pagamento.")
-    
-    data_hoje = datetime.now().strftime("%d/%m/%Y")
-    c.setFont("Helvetica-Bold", 10)
-    c.drawRightString(width - margin - 0.4 * cm, y_row1, f"DATA: {data_hoje}")
-    
-    # --- Texto Introdutório ---
-    y_texto_area_top = y_quadro_top - quadro_height
-    
-    styles = getSampleStyleSheet()
-    style_intro = ParagraphStyle('Intro', parent=styles['Normal'], fontName='Helvetica', fontSize=11, leading=14, alignment=TA_JUSTIFY)
-    texto_intro = "Por meio do presente, solicito que sejam tomadas as medidas necessárias no sentido de que sejam empenhadas e pagas as despesas que seguem abaixo:"
-    p_intro = Paragraph(texto_intro, style_intro)
-    w_p, h_p = p_intro.wrap(width - 2 * margin, height)
-    
-    espacamento_fixo = 1.0 * cm
-    y_texto_pos = y_texto_area_top - espacamento_fixo - h_p
-    p_intro.drawOn(c, margin, y_texto_pos)
-    
-    # --- Tabela Individual ---
-    y_tabela_top = y_texto_pos - espacamento_fixo
-    
-    valor = float(pessoa.valor_beneficio)
-    valor_fmt = f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    conta = getattr(beneficio, 'conta_pagadora', '19.849-8')
-    
-    data = [
-        ["N.º", "Beneficiário", "Tipo de Benefício", "Valor", "Conta Pagadora"],
-        ["1", pessoa.nome_completo, beneficio.nome, valor_fmt, conta]
-    ]
-    
-    table = Table(data, colWidths=[1*cm, 6*cm, 4.5*cm, 2.5*cm, 3*cm])
-    table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.white),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
-    ]))
-    
-    w_t, h_t = table.wrap(width - 2 * margin, height)
-    y_tabela_pos = y_tabela_top - h_t
-    table.drawOn(c, margin, y_tabela_pos)
-    
-    # --- Texto de Fechamento ---
-    y_fim = y_tabela_pos - 2.0 * cm
-    texto_fim = "Despeço-me cordialmente aproveitando a oportunidade para reiterar os nossos sentimentos de elevada estima e consideração e me deixando a disposição para o que precisar."
-    p_fim = Paragraph(texto_fim, style_intro)
-    w_f, h_f = p_fim.wrap(width - 2 * margin, height)
-    p_fim.drawOn(c, margin, y_fim)
-    
-    y_fim -= 1 * cm
-    c.setFont("Helvetica", 11)
-    c.drawString(margin, y_fim, "Atenciosamente,")
-    
-    # --- Assinatura ---
-    y_assinatura = y_fim - 2.5 * cm
-    c.setFont("Helvetica-Bold", 13)
-    c.drawCentredString(width / 2, y_assinatura, "Zélia Maria Matias e Silva")
-    y_assinatura -= 0.5 * cm
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(width / 2, y_assinatura, "Secretária Adjunta de Assistência Social")
-    
-    # --- Rodapé ---
-    c.setLineWidth(0.5)
-    c.line(margin, 5.5 * cm, width - margin, 5.5 * cm)
-    
-    c.setFont("Helvetica", 8)
-    c.setFillColor(colors.grey)
-    c.drawCentredString(width / 2, 5.1 * cm, "Rua Pç. Pres. Getúlio Vargas, 57, Centro")
-    c.drawCentredString(width / 2, 4.7 * cm, "CEP: 58150-000   –   Pocinhos – PB")
-    c.drawCentredString(width / 2, 4.3 * cm, "e-mail: assistenciasocialpocinhos@gmail.com")
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
-
-def gerar_memorando_massa_pdf(beneficio, pessoas):
-    """Gera memorando em massa com paginação segura."""
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    margin = 2 * cm
-    
-    # Configurações
-    altura_linha = 0.7 * cm
-    margem_inferior_tabela = 2 * cm
-    espaco_fechamento = 5.5 * cm  # Espaço necessário para fechamento + assinatura
-    
-    # Definição das larguras e posições X das colunas
-    col_widths = [1.0*cm, 6.0*cm, 4.5*cm, 2.5*cm, 3.0*cm]
-    total_table_width = sum(col_widths)
-    table_margin = (width - total_table_width) / 2
-    
-    col_x_starts = [table_margin]
-    for w in col_widths[:-1]:
-        col_x_starts.append(col_x_starts[-1] + w)
-    
-    styles = getSampleStyleSheet()
-    style_intro = ParagraphStyle('Intro', parent=styles['Normal'], fontName='Helvetica', fontSize=11, leading=14, alignment=TA_JUSTIFY)
-    
-    def desenhar_cabecalho_pagina():
-        """Desenha cabeçalho completo (brasão, títulos, quadro DE/PARA)"""
-        y = height - 1.5 * cm
-        
-        # Brasão
-        caminho_brasao = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'brasao.jpg')
-        if os.path.exists(caminho_brasao):
-            c.drawImage(caminho_brasao, (width/2) - 0.75*cm, y - 1.5*cm, width=1.5*cm, height=1.5*cm, mask='auto')
-        y -= 2.5 * cm
-        
-        # Títulos
-        c.setFont("Helvetica-Bold", 11)
-        c.setFillColor(colors.black)
-        c.drawCentredString(width / 2, y, "ESTADO DA PARAÍBA")
-        y -= 0.4 * cm
-        c.drawCentredString(width / 2, y, "PREFEITURA MUNICIPAL DE POCINHOS")
-        y -= 0.4 * cm
-        c.drawCentredString(width / 2, y, "SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL")
-        
-        # Título do Memorando
-        y -= 1.2 * cm
-        num_memo = getattr(beneficio, 'numero_memorando', '4092/2025')
-        c.setFont("Helvetica-Bold", 14)
-        c.drawCentredString(width / 2, y, f"M E M O R A N D O Nº. {num_memo}")
-        
-        # Quadro DE/PARA/ASSUNTO
-        y_quadro_top = y - 0.8 * cm
-        quadro_height = 3.2 * cm
-        c.setLineWidth(1)
-        c.setStrokeColor(colors.navy)
-        c.rect(margin, y_quadro_top - quadro_height, width - 2 * margin, quadro_height)
-        c.setStrokeColor(colors.black)
-        
-        y_row1 = y_quadro_top - 0.7 * cm
-        y_row2 = y_quadro_top - 1.4 * cm
-        y_row3 = y_quadro_top - 2.6 * cm
-        
-        c.setFont("Helvetica-Bold", 10)
-        c.setFillColor(colors.navy)
-        c.drawString(margin + 0.4 * cm, y_row1, "DE:")
-        c.drawString(margin + 0.4 * cm, y_row2, "PARA:")
-        c.setFillColor(colors.black)
-        c.drawString(margin + 0.4 * cm, y_row3, "ASSUNTO:")
-        
-        c.setFont("Helvetica", 10)
-        c.drawString(margin + 3 * cm, y_row1, "SECRETARIA DE ASSISTÊNCIA SOCIAL")
-        
-        c.setFont("Helvetica-Bold", 10)
-        c.setFillColor(colors.navy)
-        c.drawString(margin + 3 * cm, y_row2, "SECRETARIA DE FINANÇAS")
-        c.setFont("Helvetica", 9)
-        c.drawString(margin + 3 * cm, y_row2 - 0.5 * cm, "Att: Sr. Carlos Roberto Alves Filho – Secretário de Finanças")
-        
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(margin + 3 * cm, y_row3, "Envio de pagamento.")
-        
-        data_hoje = datetime.now().strftime("%d/%m/%Y")
-        c.setFont("Helvetica-Bold", 10)
-        c.drawRightString(width - margin - 0.4 * cm, y_row1, f"DATA: {data_hoje}")
-        
-        # Texto introdutório
-        y_texto = y_quadro_top - quadro_height - 1.0 * cm
-        texto_intro = "Por meio do presente, solicito que sejam tomadas as medidas necessárias no sentido de que sejam empenhadas e pagas as despesas que seguem abaixo:"
-        p_intro = Paragraph(texto_intro, style_intro)
-        w_p, h_p = p_intro.wrap(width - 2 * margin, height)
-        y_texto -= h_p
-        p_intro.drawOn(c, margin, y_texto)
-        
-        return y_texto - 1.0 * cm
-    
-    def desenhar_cabecalho_tabela(y_pos):
-        """Desenha apenas o cabeçalho da tabela"""
-        c.setFont("Helvetica-Bold", 9)
-        c.setFillColor(colors.black)
-        header_y_bottom = y_pos - 0.7*cm
-        
-        c.rect(table_margin, header_y_bottom, total_table_width, 0.7*cm)
-        
-        current_x = table_margin
-        for w in col_widths:
-            c.line(current_x, y_pos, current_x, header_y_bottom)
-            current_x += w
-        c.line(current_x, y_pos, current_x, header_y_bottom)
-        
-        y_text = y_pos - 0.5*cm
-        c.drawCentredString(col_x_starts[0] + col_widths[0]/2, y_text, "N.º")
-        c.drawCentredString(col_x_starts[1] + col_widths[1]/2, y_text, "Beneficiário")
-        c.drawCentredString(col_x_starts[2] + col_widths[2]/2, y_text, "Tipo de Benefício")
-        c.drawCentredString(col_x_starts[3] + col_widths[3]/2, y_text, "Valor")
-        c.drawCentredString(col_x_starts[4] + col_widths[4]/2, y_text, "Conta Pagadora")
-        
-        return header_y_bottom
-    
-    def desenhar_fechamento_assinatura(y_pos):
-        """Desenha bloco de fechamento e assinatura"""
-        c.setFillColor(colors.black)
-        
-        # Texto de fechamento
-        texto_fim = "Despeço-me cordialmente aproveitando a oportunidade para reiterar os nossos sentimentos de elevada estima e consideração e me deixando a disposição para o que precisar."
-        p_fim = Paragraph(texto_fim, style_intro)
-        w_f, h_f = p_fim.wrap(width - 2 * margin, height)
-        y_pos -= h_f
-        p_fim.drawOn(c, margin, y_pos)
-        
-        # Atenciosamente
-        y_pos -= 1.2 * cm
-        c.setFont("Helvetica", 11)
-        c.drawString(margin, y_pos, "Atenciosamente,")
-        
-        # Assinatura
-        y_pos -= 2 * cm
-        c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(width / 2, y_pos, "Zélia Maria Matias e Silva")
-        y_pos -= 0.5 * cm
-        c.setFont("Helvetica", 12)
-        c.drawCentredString(width / 2, y_pos, "Secretária Adjunta de Assistência Social")
-        
-        # Rodapé
-        y_rodape = 2 * cm
-        c.setLineWidth(0.5)
-        c.line(margin, y_rodape, width - margin, y_rodape)
-        
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.grey)
-        c.drawCentredString(width / 2, y_rodape - 0.4 * cm, "Rua Pç. Pres. Getúlio Vargas, 57, Centro")
-        c.drawCentredString(width / 2, y_rodape - 0.8 * cm, "CEP: 58150-000   –   Pocinhos – PB")
-        c.drawCentredString(width / 2, y_rodape - 1.2 * cm, "e-mail: assistenciasocialpocinhos@gmail.com")
-    
-    # --- INÍCIO DA GERAÇÃO ---
-    
-    # Primeira página com cabeçalho completo
-    y_atual = desenhar_cabecalho_pagina()
-    y_atual = desenhar_cabecalho_tabela(y_atual)
-    
-    c.setFont("Helvetica", 9)
-    
-    for idx, pessoa in enumerate(pessoas, 1):
-        # Verifica se precisa de nova página
-        if y_atual - altura_linha < margem_inferior_tabela:
-            c.showPage()
-            y_atual = height - 1.5 * cm
-            y_atual = desenhar_cabecalho_tabela(y_atual)
-            c.setFont("Helvetica", 9)
-        
-        # Desenha linha da tabela
-        y_bottom = y_atual - altura_linha
-        c.setFillColor(colors.black)
-        c.rect(table_margin, y_bottom, total_table_width, altura_linha)
-        
-        current_x = table_margin
-        for w in col_widths:
-            c.line(current_x, y_atual, current_x, y_bottom)
-            current_x += w
-        c.line(current_x, y_atual, current_x, y_bottom)
-        
-        # Dados
-        valor = float(pessoa.valor_beneficio)
-        valor_fmt = f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        conta = getattr(beneficio, 'conta_pagadora', '19.849-8')
-        
-        y_text = y_atual - 0.5 * cm
-        c.drawCentredString(col_x_starts[0] + col_widths[0]/2, y_text, str(idx))
-        c.drawCentredString(col_x_starts[1] + col_widths[1]/2, y_text, pessoa.nome_completo[:38])
-        c.drawCentredString(col_x_starts[2] + col_widths[2]/2, y_text, beneficio.nome[:38])
-        c.drawCentredString(col_x_starts[3] + col_widths[3]/2, y_text, valor_fmt)
-        c.drawCentredString(col_x_starts[4] + col_widths[4]/2, y_text, str(conta)[:12])
-        
-        y_atual = y_bottom
-    
-    # Verifica se há espaço para fechamento + assinatura
-    if y_atual - espaco_fechamento < 2 * cm:
-        c.showPage()
-        y_atual = height - 3 * cm
-    
-    # Desenha fechamento e assinatura
-    desenhar_fechamento_assinatura(y_atual - 1.5 * cm)
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
-    
+ 
 def gerar_recibos_massa_pdf(pessoas):
     """Gera recibos em massa (2 vias para cada pessoa)"""
     buffer = BytesIO()
@@ -602,6 +255,7 @@ def gerar_memorando_segunda_via_pdf(memorando):
     altura_linha = 0.7 * cm
     margem_inferior_tabela = 2 * cm
     espaco_fechamento = 5.5 * cm
+    config = memorando
     
     col_widths = [1.0*cm, 6.0*cm, 4.5*cm, 2.5*cm, 3.0*cm]
     total_table_width = sum(col_widths)
@@ -662,7 +316,7 @@ def gerar_memorando_segunda_via_pdf(memorando):
         c.setFillColor(colors.navy)
         c.drawString(margin + 3 * cm, y_row2, "SECRETARIA DE FINANÇAS")
         c.setFont("Helvetica", 9)
-        c.drawString(margin + 3 * cm, y_row2 - 0.5 * cm, "Att: Sr. Carlos Roberto Alves Filho – Secretário de Finanças")
+        c.drawString(margin + 3 * cm, y_row2 - 0.5 * cm, f"Att: Sr. {config.financas_nome} – {config.financas_cargo}")
         
         c.setFillColor(colors.black)
         c.setFont("Helvetica-Bold", 10)
@@ -718,10 +372,10 @@ def gerar_memorando_segunda_via_pdf(memorando):
         
         y_pos -= 2 * cm
         c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(width / 2, y_pos, "Zélia Maria Matias e Silva")
+        c.drawCentredString(width / 2, y_pos, config.secretaria_nome)
         y_pos -= 0.5 * cm
         c.setFont("Helvetica", 12)
-        c.drawCentredString(width / 2, y_pos, "Secretária Adjunta de Assistência Social")
+        c.drawCentredString(width / 2, y_pos, config.secretaria_cargo)
         
         y_pos = max(y_pos - 1.5 * cm, 2.5 * cm)
         c.setLineWidth(0.5)
@@ -729,9 +383,9 @@ def gerar_memorando_segunda_via_pdf(memorando):
         
         c.setFont("Helvetica", 8)
         c.setFillColor(colors.grey)
-        c.drawCentredString(width / 2, y_pos - 0.4 * cm, "Rua Pç. Pres. Getúlio Vargas, 57, Centro")
-        c.drawCentredString(width / 2, y_pos - 0.8 * cm, "CEP: 58150-000   –   Pocinhos – PB")
-        c.drawCentredString(width / 2, y_pos - 1.2 * cm, "e-mail: assistenciasocialpocinhos@gmail.com")
+        c.drawCentredString(width / 2, y_pos - 0.4 * cm, config.endereco)
+        c.drawCentredString(width / 2, y_pos - 0.8 * cm, f"CEP: {config.cep}   –   Pocinhos – PB")
+        c.drawCentredString(width / 2, y_pos - 1.2 * cm, f"e-mail: {config.email_institucional}")
     
     # Primeira página
     y_atual = desenhar_cabecalho_pagina()

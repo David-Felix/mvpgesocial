@@ -199,20 +199,6 @@ def pessoa_documento(request, pk):
     return render(request, 'beneficios/documento_form.html', context)
 
 @login_required
-def beneficio_edit(request, pk):
-    """Editar benefício (modal/popup)"""
-    beneficio = get_object_or_404(Beneficio, pk=pk)
-    
-    if request.method == 'POST':
-        beneficio.conta_pagadora = request.POST.get('conta_pagadora', '')
-        beneficio.save()
-        messages.success(request, f'Benefício {beneficio.nome} atualizado!')
-        return redirect('dashboard')
-    
-    return render(request, 'beneficios/beneficio_modal.html', {'beneficio': beneficio})
-
-
-@login_required
 def pessoas_por_beneficio(request, beneficio_id):
     """Lista pessoas de um benefício com filtros otimizados."""
     beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
@@ -968,3 +954,28 @@ def memorando_segunda_via(request, pk):
     except Exception as e:
         messages.error(request, f'Erro ao gerar segunda via: {str(e)}')
         return redirect('memorandos_lista')
+
+@login_required
+def configuracoes_gerais(request):
+    """Editar configurações gerais do sistema"""
+    if not request.user.is_staff:
+        messages.error(request, 'Você não tem permissão para acessar esta área!')
+        return redirect('dashboard')
+    
+    from .models import ConfiguracaoGeral
+    config = ConfiguracaoGeral.get_config()
+    
+    if request.method == 'POST':
+        config.secretaria_nome = request.POST.get('secretaria_nome', '').strip()
+        config.secretaria_cargo = request.POST.get('secretaria_cargo', '').strip()
+        config.financas_nome = request.POST.get('financas_nome', '').strip()
+        config.financas_cargo = request.POST.get('financas_cargo', '').strip()
+        config.email_institucional = request.POST.get('email_institucional', '').strip()
+        config.endereco = request.POST.get('endereco', '').strip()
+        config.cep = request.POST.get('cep', '').strip()
+        config.save()
+        
+        messages.success(request, 'Configurações salvas com sucesso!')
+        return redirect('configuracoes_gerais')
+    
+    return render(request, 'beneficios/configuracoes_gerais.html', {'config': config})
