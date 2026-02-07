@@ -127,12 +127,11 @@ class Memorando(models.Model):
 class MemorandoPessoa(models.Model):
     """Snapshot dos dados das pessoas no momento da geração do memorando"""
     memorando = models.ForeignKey(Memorando, on_delete=models.CASCADE, related_name='pessoas')
-    pessoa = models.ForeignKey(Pessoa, on_delete=models.SET_NULL, null=True)  # Referência original
+    pessoa = models.ForeignKey(Pessoa, on_delete=models.SET_NULL, null=True)
     # Snapshot dos dados (imutáveis)
     nome_completo = models.CharField(max_length=200)
-    cpf = models.CharField(max_length=14)
     valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2)
-    ordem = models.PositiveIntegerField()  # Ordem no memorando
+    ordem = models.PositiveIntegerField()
     
     class Meta:
         verbose_name = 'Pessoa do Memorando'

@@ -50,7 +50,6 @@ def registrar_memorando(beneficio, pessoas_dados, usuario):
                 memorando=memorando,
                 pessoa=dados.get('pessoa'),
                 nome_completo=dados['nome_completo'],
-                cpf=dados['cpf'],
                 valor_beneficio=dados['valor_beneficio'],
                 ordem=dados['ordem']
             )
