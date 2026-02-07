@@ -96,7 +96,7 @@
                 <i class="bi bi-funnel"></i> Filtros de Busca
             </h5>
         </div>
-        <div class="card-body">
+        <div class="card-body filtros-compactos">
             <form method="get" action="">
                 <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
                 
@@ -132,16 +132,16 @@
                         <label class="form-label small">De ID (nº)</label>
                         <input type="number" name="id_de" class="form-control" 
                                placeholder="" min="1" value="{{ filtros.id_de }}">
-                    </div>
-                    
+                    </div>       
+
                     <div class="col-md-1">
                         <label class="form-label small">Até ID (nº)</label>
                         <input type="number" name="id_ate" class="form-control" 
                                placeholder="" min="1" value="{{ filtros.id_ate }}">
                     </div>
-                    
-                    <div class="col-md-2 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-info flex-fill">
+
+                    <div class="col-auto d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-info">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                         <a href="{% url 'pessoas_por_beneficio' beneficio.id %}" class="btn btn-secondary">

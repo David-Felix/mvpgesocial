@@ -912,7 +912,7 @@ def memorandos_lista(request):
     # Filtros
     f_data_inicio = request.GET.get('data_inicio', '').strip()
     f_data_fim = request.GET.get('data_fim', '').strip()
-    f_beneficios = request.GET.getlist('beneficio')
+    f_beneficio = request.GET.get('beneficio', '').strip()
     
     if f_data_inicio:
         try:
@@ -930,11 +930,8 @@ def memorandos_lista(request):
         except ValueError:
             pass
     
-    if f_beneficios:
-        # Validar que são IDs numéricos
-        beneficios_ids = [int(b) for b in f_beneficios if b.isdigit()]
-        if beneficios_ids:
-            memorandos_query = memorandos_query.filter(beneficio_id__in=beneficios_ids)
+    if f_beneficio and f_beneficio.isdigit():
+        memorandos_query = memorandos_query.filter(beneficio_id=int(f_beneficio))
     
     # Paginação
     paginator = Paginator(memorandos_query, 20)
@@ -942,7 +939,7 @@ def memorandos_lista(request):
     memorandos = paginator.get_page(page_number)
     
     # Benefícios para o filtro
-    beneficios = Beneficio.objects.filter(ativo=True).order_by('nome')
+    beneficios = Beneficio.objects.order_by('nome')
     
     context = {
         'memorandos': memorandos,
@@ -950,7 +947,7 @@ def memorandos_lista(request):
         'filtros': {
             'data_inicio': f_data_inicio,
             'data_fim': f_data_fim,
-            'beneficios': f_beneficios,
+            'beneficio': f_beneficio,
         }
     }
     

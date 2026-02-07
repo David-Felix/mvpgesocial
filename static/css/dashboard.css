@@ -504,3 +504,29 @@
     justify-content: center;
     font-size: 2rem;
 }
+/* ========== FILTROS COMPACTOS ========== */
+.filtros-compactos .form-control,
+.filtros-compactos .form-select {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.filtros-compactos .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.filtros-compactos select[multiple] {
+    font-size: 0.8rem;
+}
+
+.filtros-compactos .btn {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.filtros-compactos .text-muted {
+    font-size: 0.75rem;
+}
