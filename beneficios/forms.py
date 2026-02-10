@@ -1,6 +1,19 @@
 from django import forms
 from .models import Pessoa, Documento, Beneficio
 
+def validar_pdf_real(arquivo):
+    """Valida se o arquivo é realmente um PDF (magic bytes)"""
+    if arquivo:
+        # Lê os primeiros bytes
+        arquivo.seek(0)
+        header = arquivo.read(5)
+        arquivo.seek(0)  # Volta ao início para não quebrar o upload
+        
+        # PDF sempre começa com %PDF-
+        if header != b'%PDF-':
+            return False
+    return True
+
 class PessoaForm(forms.ModelForm):
     arquivo = forms.FileField(
         required=False,
@@ -56,6 +69,8 @@ class PessoaForm(forms.ModelForm):
                 raise forms.ValidationError('Apenas arquivos PDF são permitidos.')
             if arquivo.size > 10 * 1024 * 1024:
                 raise forms.ValidationError('Arquivo muito grande. Tamanho máximo: 10MB.')
+            if not validar_pdf_real(arquivo):
+                raise forms.ValidationError('Arquivo inválido. Envie um PDF verdadeiro.')
         return arquivo
     
     def clean_celular(self):
@@ -118,11 +133,13 @@ class DocumentoForm(forms.ModelForm):
         arquivo = self.cleaned_data.get('arquivo')
         
         if arquivo:
-            if not arquivo.name.endswith('.pdf'):
+            if not arquivo.name.lower().endswith('.pdf'):
                 raise forms.ValidationError('Apenas arquivos PDF são permitidos')
             
-            # Limite de 10MB
             if arquivo.size > 10 * 1024 * 1024:
                 raise forms.ValidationError('Arquivo muito grande. Tamanho máximo: 10MB')
+            
+            if not validar_pdf_real(arquivo):
+                raise forms.ValidationError('Arquivo inválido. Envie um PDF verdadeiro.')
         
         return arquivo

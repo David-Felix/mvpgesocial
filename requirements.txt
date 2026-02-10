@@ -14,3 +14,5 @@ python-decouple==3.8
 reportlab==4.2.5
 sqlparse==0.5.5
 num2words==0.5.13
+django-ipware==7.0.1
+python-ipware==3.0.0

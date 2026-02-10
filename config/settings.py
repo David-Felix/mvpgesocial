@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',
     'beneficios',
 ]
 
@@ -25,6 +26,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -107,3 +109,16 @@ AUTH_USER_MODEL = 'beneficios.User'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# Autenticação com rate limiting
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Rate Limiting - Proteção contra força bruta
+AXES_FAILURE_LIMIT = 5  # Bloqueia após 5 tentativas
+AXES_COOLOFF_TIME = 1   # Bloqueia por 1 hora
+AXES_LOCKOUT_TEMPLATE = 'beneficios/lockout.html'
+AXES_RESET_ON_SUCCESS = True  # Reseta contador após login bem-sucedido
+AXES_LOCKOUT_PARAMETERS = ['username']
