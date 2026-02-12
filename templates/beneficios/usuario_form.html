@@ -1,31 +1,31 @@
 {% extends 'beneficios/base.html' %}
-
+{% load static %}
 {% block title %}{{ titulo }} - Sistema de Benefícios{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-person-plus"></i> {{ titulo }}
-                    </h4>
+            <div class="card form-panel">
+                <div class="card-header">
+                    <i class="bi bi-person-plus"></i> {{ titulo }}
                 </div>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
-			<div class="mb-3">
-    			    <label class="form-label">Nome de Usuário</label>
-    			    <input type="text" 
-           			    name="username" 
-           		 	    class="form-control" 
-           			    pattern="[a-zA-Z0-9._-]+"
-                                    title="Apenas letras, números, ponto, hífen e underscore. Sem espaços!"required>
-    			    <div class="form-text">
-        		        <i class="bi bi-info-circle"></i> Usado para fazer login no sistema (sem espaços)
-    			    </div>
-			</div>
+            			<div class="mb-3">
+                			    <label class="form-label">Nome de Usuário</label>
+                			    <input type="text" 
+                       			    name="username" 
+                       		 	    class="form-control" 
+                       			    pattern="[a-zA-Z0-9._-]+"
+                                                title="Apenas letras, números, ponto, hífen e underscore. Sem espaços!"required>
+                			    <div class="form-text">
+                    		        <i class="bi bi-info-circle"></i> Usado para fazer login no sistema (sem espaços)
+                			    </div>
+            			</div>
 
                         <div class="mb-3">
                             <label class="form-label">Senha</label>

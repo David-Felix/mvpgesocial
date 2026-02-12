@@ -61,28 +61,28 @@
                     {% endfor %}
                 </div>
             </div>
-            
+            {% if user.is_staff %}
             <a class="nav-link" href="{% url 'beneficios_list' %}">
                 <i class="bi bi-gear"></i> Gerenciar Benefícios
             </a>
+            {% endif %}
             <a class="nav-link" href="{% url 'memorandos_lista' %}">
                 <i class="bi bi-file-earmark-text"></i> Histórico de Memorandos
             </a>
-            {% if perms.auth.change_user or user.is_superuser %}
+            {% if user.is_staff %}
             <a class="nav-link" href="{% url 'usuarios_list' %}">
                 <i class="bi bi-people-fill"></i> Gerenciar Usuários
             </a>
             {% endif %}
-            {% if perms.beneficios.pode_ver_configuracoes or user.is_superuser %}
+            {% if user.is_staff %}
             <a class="nav-link" href="{% url 'configuracoes_gerais' %}"> 
                 <i class="bi bi-sliders"></i> Configurações Gerais
             </a>
             {% endif %}
-            {% if perms.beneficios.pode_fazer_backup or user.is_superuser %}
+            
             <a class="nav-link" href="#"> 
                 <i class="bi bi-cloud-upload"></i> Backup
             </a>
-            {% endif %}
             
             <hr>
             
@@ -95,7 +95,7 @@
             
             {% if user.is_superuser %}
             <hr>
-            <a class="nav-link" href="/admin/">
+            <a class="nav-link" href="/panel-super-gesocial/">
                 <i class="bi bi-shield-lock"></i> Painel Admin
             </a>
             {% endif %}

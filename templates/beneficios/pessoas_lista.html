@@ -100,26 +100,26 @@
             <form method="get" action="">
                 <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
                 
-                <div class="row g-3">
-                    <div class="col-md-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-xl-2 col-lg-2 col-md-3 col-sm-5">
                         <label class="form-label small">Nome</label>
                         <input type="text" name="nome" class="form-control" 
                                placeholder="Buscar por nome" value="{{ filtros.nome }}">
                     </div>
                     
-                    <div class="col-md-2">
-                        <label class="form-label small">CPF (últimos 4 dígitos)</label>
+                    <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6">
+                        <label class="form-label small">CPF</label>
                         <input type="text" name="cpf" class="form-control" 
                                placeholder="0000" value="{{ filtros.cpf }}">
                     </div>
                     
-                    <div class="col-md-1">
+                    <div class="col-xl-1 col-lg-2 col-md-2 col-sm-4">
                         <label class="form-label small">Valor</label>
                         <input type="text" name="valor" class="form-control" 
                                placeholder="0,00" value="{{ filtros.valor }}">
                     </div>
 
-                    <div class="col-md-2">
+                    <div class="col-xl-2 col-lg-2 col-md-3 col-sm-4">
                         <label class="form-label small">Status</label>
                         <select name="status" class="form-control">
                             <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativo</option>
@@ -128,25 +128,27 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-1">
-                        <label class="form-label small">De ID (nº)</label>
+                    <div class="col-xl-1 col-lg-1 col-md-2 col-sm-4">
+                        <label class="form-label small">De ID</label>
                         <input type="number" name="id_de" class="form-control" 
                                placeholder="" min="1" value="{{ filtros.id_de }}">
                     </div>       
 
-                    <div class="col-md-1">
-                        <label class="form-label small">Até ID (nº)</label>
+                    <div class="col-xl-1 col-lg-1 col-md-2 col-sm-4">
+                        <label class="form-label small">Até ID</label>
                         <input type="number" name="id_ate" class="form-control" 
                                placeholder="" min="1" value="{{ filtros.id_ate }}">
                     </div>
 
-                    <div class="col-auto d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-info">
-                            <i class="bi bi-search"></i> Filtrar
-                        </button>
-                        <a href="{% url 'pessoas_por_beneficio' beneficio.id %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Limpar
-                        </a>
+                    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-info">
+                                <i class="bi bi-search"></i> Filtrar
+                            </button>
+                            <a href="{% url 'pessoas_por_beneficio' beneficio.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Limpar
+                            </a>
+                        </div>
                     </div>
                 </div>
             </form>

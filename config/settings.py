@@ -29,6 +29,7 @@ MIDDLEWARE = [
     'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'beneficios.middleware.ForcarTrocaSenhaMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -68,13 +69,15 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+     'OPTIONS': {'min_length': 8}},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {'NAME': 'beneficios.validators.SenhaForteValidator'},
 ]
 
 LANGUAGE_CODE = 'pt-br'
-TIME_ZONE = 'America/Sao_Paulo'
+TIME_ZONE = 'America/Fortaleza'
 USE_I18N = True
 USE_TZ = True
 
@@ -122,3 +125,14 @@ AXES_COOLOFF_TIME = 1   # Bloqueia por 1 hora
 AXES_LOCKOUT_TEMPLATE = 'beneficios/lockout.html'
 AXES_RESET_ON_SUCCESS = True  # Reseta contador após login bem-sucedido
 AXES_LOCKOUT_PARAMETERS = ['username']
+
+# Segurança de Cookies
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+
+# Sessão expira após 1h de inatividade
+SESSION_COOKIE_AGE = 3600
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True

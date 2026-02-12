@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage
 from .models import Pessoa, Beneficio, Documento, Memorando, MemorandoPessoa
@@ -10,6 +12,7 @@ from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
 from decimal import Decimal
 import os
+
 
 
 @login_required
@@ -204,7 +207,7 @@ def pessoas_por_beneficio(request, beneficio_id):
     beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
     
     # Query Base
-    pessoas_query = Pessoa.objects.filter(beneficio=beneficio).select_related('documento').order_by('nome_completo')
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio).order_by('nome_completo')
         
     # Contagens dos Cards
     stats = pessoas_query.aggregate(
@@ -354,6 +357,9 @@ def pessoas_por_beneficio(request, beneficio_id):
 @login_required
 def beneficios_list(request):
     """Lista e gerencia benefícios"""
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
+        return redirect('dashboard')
     beneficios = Beneficio.objects.annotate(
         total_pessoas=Count('pessoa'),
         pessoas_ativas=Count('pessoa', filter=Q(pessoa__ativo=True)),
@@ -368,6 +374,9 @@ def beneficios_list(request):
 @login_required
 def beneficio_create(request):
     """Criar novo benefício"""
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
+        return redirect('dashboard')
     if request.method == 'POST':
         nome = request.POST.get('nome')
         conta_pagadora = request.POST.get('conta_pagadora', '')
@@ -385,6 +394,9 @@ def beneficio_create(request):
 @login_required
 def beneficio_edit_form(request, pk):
     """Editar benefício"""
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
+        return redirect('dashboard')
     beneficio = get_object_or_404(Beneficio, pk=pk)
     
     if request.method == 'POST':
@@ -404,6 +416,9 @@ def beneficio_edit_form(request, pk):
 @login_required
 def beneficio_toggle(request, pk):
     """Ativar/Desativar benefício"""
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
+        return redirect('dashboard')
     beneficio = get_object_or_404(Beneficio, pk=pk)
     beneficio.ativo = not beneficio.ativo
     beneficio.save()
@@ -421,7 +436,12 @@ def usuarios_list(request):
     
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    usuarios = User.objects.all().order_by('username')
+    
+    # Super Admin vê todos, Administrador não vê superusers
+    if request.user.is_superuser:
+        usuarios = User.objects.all().order_by('username')
+    else:
+        usuarios = User.objects.filter(is_superuser=False).order_by('username')
     
     context = {
         'usuarios': usuarios,
@@ -453,6 +473,7 @@ def usuario_create(request):
         else:
             user = User.objects.create_user(username=username, password=password)
             user.is_staff = is_staff
+            user.is_superuser = False
             user.save()
             
             tipo = 'Administrador' if is_staff else 'Usuário'
@@ -471,6 +492,10 @@ def usuario_toggle_staff(request, pk):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     usuario = get_object_or_404(User, pk=pk)
+    
+    if usuario.is_superuser:
+        messages.error(request, 'Não é possível alterar um Super Admin!')
+        return redirect('usuarios_list')
     
     if usuario == request.user:
         messages.error(request, 'Você não pode alterar suas próprias permissões!')
@@ -493,6 +518,10 @@ def usuario_toggle_active(request, pk):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     usuario = get_object_or_404(User, pk=pk)
+    
+    if usuario.is_superuser:
+        messages.error(request, 'Não é possível desativar um Super Admin!')
+        return redirect('usuarios_list')
     
     if usuario == request.user:
         messages.error(request, 'Você não pode desativar sua própria conta!')
@@ -883,8 +912,8 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.0.0',
-        'data_compilacao': '06/02/2026',
+        'versao': '1.0.1',
+        'data_compilacao': '11/02/2026',
         'total_usuarios': '10',
         'total_programas': Beneficio.objects.filter(ativo=True).count(),
     }
@@ -979,3 +1008,26 @@ def configuracoes_gerais(request):
         return redirect('configuracoes_gerais')
     
     return render(request, 'beneficios/configuracoes_gerais.html', {'config': config})
+
+@login_required
+def trocar_senha(request):
+    """Troca de senha obrigatória ou voluntária"""
+    obrigatorio = request.user.must_change_password
+    
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            user.must_change_password = False
+            user.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Senha alterada com sucesso!')
+            return redirect('dashboard')
+    else:
+        form = PasswordChangeForm(request.user)
+    
+    context = {
+        'form': form,
+        'obrigatorio': obrigatorio,
+    }
+    return render(request, 'beneficios/trocar_senha.html', context)

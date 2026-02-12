@@ -4,7 +4,7 @@ from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
 
 class User(AbstractUser):
     """Usuário customizado para futuras expansões"""
-    pass
+    must_change_password = models.BooleanField(default=True, verbose_name='Deve trocar senha')
 
 class Beneficio(models.Model):
     """Tipos de benefícios: Auxílio Transporte e Renda Solidária"""

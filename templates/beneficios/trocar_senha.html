@@ -1,0 +1,92 @@
+{% extends 'beneficios/base.html' %}
+{% load static %}
+
+{% block title %}Trocar Senha - GeSocial{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-key"></i> Trocar Senha
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if obrigatorio %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atenção:</strong> Você deve trocar sua senha antes de continuar.
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Requisitos da senha:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Mínimo de 8 caracteres</li>
+                            <li>Pelo menos uma letra maiúscula</li>
+                            <li>Pelo menos uma letra minúscula</li>
+                            <li>Pelo menos um número</li>
+                            <li>Pelo menos um caractere especial (!@#$%...)</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Senha Atual</label>
+                            <input type="password" 
+                                   name="old_password" 
+                                   class="form-control {% if form.old_password.errors %}is-invalid{% endif %}"
+                                   required>
+                            {% if form.old_password.errors %}
+                            <div class="invalid-feedback">{{ form.old_password.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nova Senha</label>
+                            <input type="password" 
+                                   name="new_password1" 
+                                   class="form-control {% if form.new_password1.errors %}is-invalid{% endif %}"
+                                   required>
+                            {% if form.new_password1.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.new_password1.errors %}
+                                    {{ error }}<br>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Confirmar Nova Senha</label>
+                            <input type="password" 
+                                   name="new_password2" 
+                                   class="form-control {% if form.new_password2.errors %}is-invalid{% endif %}"
+                                   required>
+                            {% if form.new_password2.errors %}
+                            <div class="invalid-feedback">{{ form.new_password2.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Alterar Senha
+                            </button>
+                            {% if not obrigatorio %}
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
