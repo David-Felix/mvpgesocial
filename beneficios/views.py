@@ -113,7 +113,11 @@ def pessoa_create(request):
             messages.success(request, f'Pessoa {pessoa.nome_completo} cadastrada com sucesso!')
             return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     else:
-        form = PessoaForm()
+        beneficio_id = request.GET.get('beneficio')
+        initial = {}
+        if beneficio_id:
+            initial['beneficio'] = beneficio_id
+        form = PessoaForm(initial=initial)
     
     context = {
         'form': form,

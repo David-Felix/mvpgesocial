@@ -144,8 +144,8 @@
                         </div>
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ voltar_url }}" class="btn btn-secondary">
-    				            <i class="bi bi-arrow-left"></i> Voltar
-			                 </a>    
+                                <i class="bi bi-arrow-left"></i> Voltar
+                             </a>    
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle"></i> Salvar
                             </button>
@@ -153,10 +153,8 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-{% if historico_status %}
+
+            {% if historico_status %}
             <div class="card form-panel mt-4">
                 <div class="card-header" style="background: linear-gradient(135deg, #6c757d 0%, #7c858d 100%);">
                     <i class="bi bi-clock-history"></i> Histórico de Status
@@ -193,9 +191,12 @@
                 </div>
             </div>
             {% endif %}
+
+        </div>
+    </div>
+</div>
 {% block extra_js %}
 <script>
-// Validação de CPF no frontend
 function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]/g, '');
     if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
@@ -213,7 +214,6 @@ function validarCPF(cpf) {
     return parseInt(cpf.charAt(9)) === digito1 && parseInt(cpf.charAt(10)) === digito2;
 }
 
-// Máscara e validação ao digitar
 document.querySelector('input[name="cpf"]').addEventListener('blur', function() {
     if (this.value && !validarCPF(this.value)) {
         this.classList.add('is-invalid');

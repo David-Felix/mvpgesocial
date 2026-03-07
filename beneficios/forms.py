@@ -66,7 +66,7 @@ class PessoaForm(forms.ModelForm):
             'endereco': 'Endereço',
             'bairro': 'Bairro',
             'cidade': 'Cidade',
-            'valor_beneficio': 'Valor à Receber',
+            'valor_beneficio': 'Valor a Receber',
             'beneficio': 'Tipo de Benefício',
             'status': 'Status',
         }

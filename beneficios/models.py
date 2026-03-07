@@ -59,7 +59,7 @@ class Pessoa(models.Model):
     endereco = models.TextField()
     bairro = models.CharField(max_length=100)
     cidade = models.CharField(max_length=50, choices=CIDADE_CHOICES)
-    valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2)
+    valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True)
     beneficio = models.ForeignKey(Beneficio, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     created_at = models.DateTimeField(auto_now_add=True)
