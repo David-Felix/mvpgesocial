@@ -19,36 +19,32 @@ import os
 def dashboard(request):
     """Dashboard com overview financeiro e benefícios ativos"""
     
-    # Benefícios ativos
     beneficios = Beneficio.objects.filter(ativo=True).order_by('id')
     
-    # Estatísticas por benefício
     stats_list = []
     total_mensal_geral = 0
     
-    # CORES E ÍCONES PADRÃO
     classes = ['benefit-card-azul', 'benefit-card-verde', 'benefit-card-turquesa', 'benefit-card-roxo']
     icones_padrao = ['bi-bus-front', 'bi-cash-coin', 'bi-wallet2', 'bi-piggy-bank']
     
     for idx, beneficio in enumerate(beneficios):
         stats = Pessoa.objects.filter(beneficio=beneficio).aggregate(
             total_pessoas=Count('id'),
-            ativos=Count('id', filter=Q(ativo=True)),
-            desativados=Count('id', filter=Q(ativo=False)),
-            valor_mensal=Sum('valor_beneficio', filter=Q(ativo=True))
+            ativos=Count('id', filter=Q(status='ativo')),
+            desativados=Count('id', filter=Q(status='desligado')),
+            valor_mensal=Sum('valor_beneficio', filter=Q(status='ativo'))
         )
         
         valor_mensal = stats['valor_mensal'] or 0
         valor_mensal_formatado = f"{valor_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         
-        # USAR ÍCONE DO BANCO OU PADRÃO
         icone = beneficio.icone if hasattr(beneficio, 'icone') and beneficio.icone else icones_padrao[idx % 4]
         
         stats_list.append({
             'id': beneficio.id,
             'nome': beneficio.nome,
             'icone': icone,  
-            'cor_classe': classes[idx % len(classes)],  # Ciclo de 4 cores (0,1,2,3)
+            'cor_classe': classes[idx % len(classes)],
             'total': stats['total_pessoas'],
             'ativos': stats['ativos'],
             'desativados': stats['desativados'],
@@ -58,12 +54,11 @@ def dashboard(request):
         
         total_mensal_geral += valor_mensal
 
-    # FORMATAR TOTAL MENSAL GERAL
     total_mensal_geral_formatado = f"{total_mensal_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     
     # Distribuição por faixa de valor
     pessoas_ativas = Pessoa.objects.filter(
-        ativo=True,
+        status='ativo',
         beneficio__ativo=True
     )
     
@@ -76,16 +71,16 @@ def dashboard(request):
         acima_300=Count('id', filter=Q(valor_beneficio__gt=300))
     )
     
-    # Totais gerais
     todas_beneficios_ativos = Pessoa.objects.filter(beneficio__ativo=True)
     
     context = {
         'beneficios': stats_list,
         'total_mensal_geral': total_mensal_geral,
-        'total_mensal_geral_formatado': total_mensal_geral_formatado,  # NOVO
+        'total_mensal_geral_formatado': total_mensal_geral_formatado,
         'total_geral': todas_beneficios_ativos.count(),
-        'total_ativos_geral': todas_beneficios_ativos.filter(ativo=True).count(),
-        'total_desativados_geral': todas_beneficios_ativos.filter(ativo=False).count(),
+        'total_ativos_geral': todas_beneficios_ativos.filter(status='ativo').count(),
+        'total_em_espera_geral': todas_beneficios_ativos.filter(status='em_espera').count(),
+        'total_desativados_geral': todas_beneficios_ativos.filter(status='desligado').count(),
         'distribuicao_valor': distribuicao_valor,
     }
     
@@ -98,6 +93,17 @@ def pessoa_create(request):
         form = PessoaForm(request.POST, request.FILES)
         if form.is_valid():
             pessoa = form.save()
+            
+            # Registrar histórico de status inicial
+            from .models import HistoricoStatus
+            from django.utils import timezone
+            HistoricoStatus.objects.create(
+                pessoa=pessoa,
+                status_anterior=None,
+                status_novo=pessoa.status,
+                data=timezone.now(),
+                usuario=request.user
+            )
             
             # Salvar documento se enviado
             arquivo = form.cleaned_data.get('arquivo')
@@ -121,8 +127,8 @@ def pessoa_create(request):
 def pessoa_edit(request, pk):
     """Editar pessoa existente"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
+    status_anterior = pessoa.status  # Guardar antes do save
     
-    # Buscar documento de forma segura
     try:
         documento_atual = pessoa.documento
     except Documento.DoesNotExist:
@@ -131,13 +137,24 @@ def pessoa_edit(request, pk):
     if request.method == 'POST':
         form = PessoaForm(request.POST, request.FILES, instance=pessoa)
         if form.is_valid():
-            form.save()
+            pessoa = form.save()
+            
+            # Registrar mudança de status se houve alteração
+            if pessoa.status != status_anterior:
+                from .models import HistoricoStatus
+                from django.utils import timezone
+                HistoricoStatus.objects.create(
+                    pessoa=pessoa,
+                    status_anterior=status_anterior,
+                    status_novo=pessoa.status,
+                    data=timezone.now(),
+                    usuario=request.user
+                )
             
             # Atualizar documento se enviado novo arquivo
             arquivo = form.cleaned_data.get('arquivo')
             if arquivo:
                 if documento_atual:
-                    # Remove arquivo antigo do storage
                     documento_atual.arquivo.delete(save=False)
                     documento_atual.arquivo = arquivo
                     documento_atual.save()
@@ -149,33 +166,98 @@ def pessoa_edit(request, pk):
     else:
         form = PessoaForm(instance=pessoa)
     
-    context = {
-        'form': form,
-        'titulo': 'Editar Pessoa',
-        'pessoa': pessoa,
-        'documento_atual': documento_atual,
-        'voltar_url': f'/beneficio/{pessoa.beneficio.id}/pessoas/'
-    }
-    return render(request, 'beneficios/pessoa_form.html', context)
+    # Buscar histórico de status
+    from .models import HistoricoStatus
+    historico = HistoricoStatus.objects.filter(pessoa=pessoa).select_related('usuario')
     
     context = {
         'form': form,
         'titulo': 'Editar Pessoa',
         'pessoa': pessoa,
         'documento_atual': documento_atual,
+        'historico_status': historico,
         'voltar_url': f'/beneficio/{pessoa.beneficio.id}/pessoas/'
     }
     return render(request, 'beneficios/pessoa_form.html', context)
 
 @login_required
-def pessoa_toggle(request, pk):
-    """Ativar/Desativar pessoa"""
+def pessoa_ativar(request, pk):
+    """Mudar status da pessoa para Ativo"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
-    pessoa.ativo = not pessoa.ativo
+    status_anterior = pessoa.status
+    
+    if status_anterior == 'ativo':
+        messages.info(request, f'{pessoa.nome_completo} já está ativa.')
+        return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
+    
+    pessoa.status = 'ativo'
     pessoa.save()
     
-    status = 'ativada' if pessoa.ativo else 'desativada'
-    messages.success(request, f'Pessoa {pessoa.nome_completo} {status} com sucesso!')
+    from .models import HistoricoStatus
+    from django.utils import timezone
+    HistoricoStatus.objects.create(
+        pessoa=pessoa,
+        status_anterior=status_anterior,
+        status_novo='ativo',
+        data=timezone.now(),
+        usuario=request.user
+    )
+    
+    messages.success(request, f'{pessoa.nome_completo} ativada com sucesso!')
+    return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
+
+
+@login_required
+def pessoa_espera(request, pk):
+    """Mudar status da pessoa para Em Espera"""
+    pessoa = get_object_or_404(Pessoa, pk=pk)
+    status_anterior = pessoa.status
+    
+    if status_anterior == 'em_espera':
+        messages.info(request, f'{pessoa.nome_completo} já está em espera.')
+        return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
+    
+    pessoa.status = 'em_espera'
+    pessoa.save()
+    
+    from .models import HistoricoStatus
+    from django.utils import timezone
+    HistoricoStatus.objects.create(
+        pessoa=pessoa,
+        status_anterior=status_anterior,
+        status_novo='em_espera',
+        data=timezone.now(),
+        usuario=request.user
+    )
+    
+    messages.success(request, f'{pessoa.nome_completo} movida para lista de espera!')
+    return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
+
+
+@login_required
+def pessoa_desligar(request, pk):
+    """Mudar status da pessoa para Desligado"""
+    pessoa = get_object_or_404(Pessoa, pk=pk)
+    status_anterior = pessoa.status
+    
+    if status_anterior == 'desligado':
+        messages.info(request, f'{pessoa.nome_completo} já está desligada.')
+        return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
+    
+    pessoa.status = 'desligado'
+    pessoa.save()
+    
+    from .models import HistoricoStatus
+    from django.utils import timezone
+    HistoricoStatus.objects.create(
+        pessoa=pessoa,
+        status_anterior=status_anterior,
+        status_novo='desligado',
+        data=timezone.now(),
+        usuario=request.user
+    )
+    
+    messages.success(request, f'{pessoa.nome_completo} desligada com sucesso!')
     return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
 
 @login_required
@@ -211,17 +293,18 @@ def pessoas_por_beneficio(request, beneficio_id):
         
     # Contagens dos Cards
     stats = pessoas_query.aggregate(
-        ativos=Count('id', filter=Q(ativo=True)),
-        desativados=Count('id', filter=Q(ativo=False)),
+        ativos=Count('id', filter=Q(status='ativo')),
+        em_espera=Count('id', filter=Q(status='em_espera')),
+        desligados=Count('id', filter=Q(status='desligado')),
         total=Count('id'),
-        total_mensal=Sum('valor_beneficio', filter=Q(ativo=True))
+        total_mensal=Sum('valor_beneficio', filter=Q(status='ativo'))
     )
     # Formatar total mensal
     total_mensal = stats['total_mensal'] or 0
     total_mensal_formatado = f"{total_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-        # Distribuição por faixa de valor (apenas deste benefício)
-    distribuicao_valor = pessoas_query.filter(ativo=True).aggregate(
+    # Distribuição por faixa de valor (apenas deste benefício)
+    distribuicao_valor = pessoas_query.filter(status='ativo').aggregate(
         ate_100=Count('id', filter=Q(valor_beneficio__lte=100)),
         de_101_150=Count('id', filter=Q(valor_beneficio__gt=100, valor_beneficio__lte=150)),
         de_151_200=Count('id', filter=Q(valor_beneficio__gt=150, valor_beneficio__lte=200)),
@@ -245,9 +328,11 @@ def pessoas_por_beneficio(request, beneficio_id):
         pessoas_filtradas = pessoas_filtradas.filter(nome_completo__icontains=f_nome)
     
     if f_status == 'ativo':
-        pessoas_filtradas = pessoas_filtradas.filter(ativo=True)
-    elif f_status == 'desativado':
-        pessoas_filtradas = pessoas_filtradas.filter(ativo=False)
+        pessoas_filtradas = pessoas_filtradas.filter(status='ativo')
+    elif f_status == 'desligado':
+        pessoas_filtradas = pessoas_filtradas.filter(status='desligado')
+    elif f_status == 'em_espera':
+        pessoas_filtradas = pessoas_filtradas.filter(status='em_espera')
     
     try:
         if f_valor and float(f_valor) > 0:
@@ -304,7 +389,8 @@ def pessoas_por_beneficio(request, beneficio_id):
             'beneficio': beneficio,
             'pessoas': pessoas_list,
             'total_ativos': stats['ativos'],
-            'total_desativados': stats['desativados'],
+            'total_em_espera': stats['em_espera'],
+            'total_desativados': stats['desligados'],
             'total_geral': stats['total'],
             'total_mensal': total_mensal_formatado,
             'distribuicao_valor': distribuicao_valor,
@@ -337,7 +423,8 @@ def pessoas_por_beneficio(request, beneficio_id):
         'beneficio': beneficio,
         'pessoas': pessoas_page,
         'total_ativos': stats['ativos'],
-        'total_desativados': stats['desativados'],
+        'total_em_espera': stats['em_espera'],
+        'total_desativados': stats['desligados'],
         'total_geral': stats['total'],
         'total_mensal': total_mensal_formatado,
         'distribuicao_valor': distribuicao_valor,
@@ -362,8 +449,8 @@ def beneficios_list(request):
         return redirect('dashboard')
     beneficios = Beneficio.objects.annotate(
         total_pessoas=Count('pessoa'),
-        pessoas_ativas=Count('pessoa', filter=Q(pessoa__ativo=True)),
-        pessoas_desligadas=Count('pessoa', filter=Q(pessoa__ativo=False))
+        pessoas_ativas=Count('pessoa', filter=Q(pessoa__status='ativo')),
+        pessoas_desligadas=Count('pessoa', filter=Q(pessoa__status='desligado'))
     ).order_by('nome')
     
     context = {
@@ -540,8 +627,8 @@ def gerar_recibo(request, pk):
     """Gera apenas 2 vias do recibo (sem documentos)"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
     
-    if not pessoa.ativo:
-        messages.error(request, 'Não é possível gerar recibo de pessoa desativada!')
+    if pessoa.status != 'ativo':
+        messages.error(request, 'Só é possível gerar recibo de pessoa ativa!')
         return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     
     try:
@@ -576,8 +663,8 @@ def gerar_memorando(request, pk):
     """Gera memorando individual com registro no histórico"""
     pessoa = get_object_or_404(Pessoa, pk=pk)
     
-    if not pessoa.ativo:
-        messages.error(request, 'Não é possível gerar memorando de pessoa desligada!')
+    if pessoa.status != 'ativo':
+        messages.error(request, 'Só é possível gerar memorando de pessoa ativa!')
         return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
     
     try:
@@ -609,7 +696,7 @@ def gerar_memorando_massa(request, beneficio_id):
     beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
     
     # Aplica os mesmos filtros da listagem
-    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, ativo=True).order_by('nome_completo')
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, status='ativo').order_by('nome_completo')
     
     # Captura filtros da URL
     f_nome = request.GET.get('nome', '').strip()
@@ -622,11 +709,10 @@ def gerar_memorando_massa(request, beneficio_id):
     # Aplica filtros
     if f_nome:
         pessoas_query = pessoas_query.filter(nome_completo__icontains=f_nome)
-    
-    if f_status == 'desativado':
-        pessoas_query = pessoas_query.filter(ativo=False)
-    elif not f_status:
-        pessoas_query = pessoas_query.filter(ativo=True)
+
+    if f_status != 'ativo':
+        messages.error(request, 'Geração em massa é permitida apenas com filtro de status "Ativo"!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
     
     try:
         if f_valor and float(f_valor) > 0:
@@ -701,7 +787,7 @@ def gerar_recibos_massa(request, beneficio_id):
     beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
     
     # Aplica os mesmos filtros da listagem
-    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, ativo=True).order_by('nome_completo')
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, status='ativo').order_by('nome_completo')
     
     # Captura filtros da URL
     f_nome = request.GET.get('nome', '').strip()
@@ -714,11 +800,10 @@ def gerar_recibos_massa(request, beneficio_id):
     # Aplica filtros
     if f_nome:
         pessoas_query = pessoas_query.filter(nome_completo__icontains=f_nome)
-    
-    if f_status == 'desativado':
-        pessoas_query = pessoas_query.filter(ativo=False)
-    elif not f_status:
-        pessoas_query = pessoas_query.filter(ativo=True)
+
+    if f_status != 'ativo':
+        messages.error(request, 'Geração em massa é permitida apenas com filtro de status "Ativo"!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
     
     try:
         if f_valor and float(f_valor) > 0:
@@ -833,7 +918,7 @@ def gerar_documentos_massa(request, beneficio_id):
         return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
 
     # 5. Query de Ativos (Usando o campo Boolean 'ativo' do seu Model)
-    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, ativo=True).order_by('nome_completo')
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, status='ativo').order_by('nome_completo')
     
     # Filtros Adicionais
     if f_nome:

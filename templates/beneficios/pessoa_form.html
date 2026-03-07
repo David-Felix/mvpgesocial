@@ -78,7 +78,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label class="form-label">{{ form.cidade.label }}</label>
                                 {{ form.cidade }}
                                 {% if form.cidade.errors %}
@@ -86,7 +86,7 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label class="form-label">{{ form.beneficio.label }}</label>
                                 {{ form.beneficio }}
                                 {% if form.beneficio.help_text %}
@@ -99,14 +99,22 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label class="form-label">{{ form.valor_beneficio.label }}</label>
                                 {{ form.valor_beneficio }}
                                 {% if form.valor_beneficio.errors %}
                                 <div class="text-danger small">{{ form.valor_beneficio.errors }}</div>
                                 {% endif %}
                             </div>
-                        </div>  
+
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">{{ form.status.label }}</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                <div class="text-danger small">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div> 
                         <div class="row">
                             <div class="col-12 mb-3">
                                 <hr class="my-4">
@@ -148,6 +156,43 @@
         </div>
     </div>
 </div>
+{% if historico_status %}
+            <div class="card form-panel mt-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #6c757d 0%, #7c858d 100%);">
+                    <i class="bi bi-clock-history"></i> Histórico de Status
+                </div>
+                <div class="card-body">
+                    <div class="timeline-status">
+                        {% for h in historico_status %}
+                        <div class="timeline-item d-flex align-items-start mb-3">
+                            <div class="timeline-icon me-3">
+                                {% if h.status_novo == 'ativo' %}
+                                <span class="badge bg-success rounded-circle p-2"><i class="bi bi-check-circle"></i></span>
+                                {% elif h.status_novo == 'em_espera' %}
+                                <span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-hourglass-split"></i></span>
+                                {% elif h.status_novo == 'desligado' %}
+                                <span class="badge bg-danger rounded-circle p-2"><i class="bi bi-x-circle"></i></span>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="fw-bold">
+                                    {% if h.status_anterior %}
+                                        {{ h.get_status_anterior_display }} → {{ h.get_status_novo_display }}
+                                    {% else %}
+                                        Cadastrada como {{ h.get_status_novo_display }}
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {{ h.data|date:"d/m/Y H:i" }}
+                                    {% if h.usuario %} — por {{ h.usuario.username }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 {% block extra_js %}
 <script>
 // Validação de CPF no frontend

@@ -43,10 +43,15 @@ class Pessoa(models.Model):
     CIDADE_CHOICES = [
         ('Pocinhos/PB', 'Pocinhos/PB'),
     ]
+
+    STATUS_CHOICES = [
+        ('ativo', 'Ativo'),
+        ('em_espera', 'Em Espera'),
+        ('desligado', 'Desligado'),
+    ]
     
     nome_completo = models.CharField(max_length=200)
-    #cpf = models.CharField(max_length=14, unique=True)
-    cpf=EncryptedCharField(max_length=14, unique=True, verbose_name='CPF')  # CRIPTOGRAFADO
+    cpf = EncryptedCharField(max_length=14, verbose_name='CPF')
     cpf_ultimos_4 = models.CharField(max_length=4, db_index=True, blank=True, default='')
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES)
     data_nascimento = models.DateField(null=True, blank=True)
@@ -56,7 +61,7 @@ class Pessoa(models.Model):
     cidade = models.CharField(max_length=50, choices=CIDADE_CHOICES)
     valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2)
     beneficio = models.ForeignKey(Beneficio, on_delete=models.PROTECT)
-    ativo = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -66,7 +71,6 @@ class Pessoa(models.Model):
         ordering = ['nome_completo']
         
     def save(self, *args, **kwargs):
-        # Extrai últimos 4 dígitos do CPF ao salvar
         if self.cpf:
             cpf_numeros = ''.join(filter(str.isdigit, self.cpf))
             if len(cpf_numeros) >= 4:
@@ -207,3 +211,21 @@ class ConfiguracaoGeral(models.Model):
     
     def __str__(self):
         return "Configurações Gerais"
+
+class HistoricoStatus(models.Model):
+    """Histórico de mudanças de status das pessoas"""
+    STATUS_CHOICES = Pessoa.STATUS_CHOICES + [('cadastrado', 'Cadastrado')]
+    
+    pessoa = models.ForeignKey(Pessoa, on_delete=models.CASCADE, related_name='historico_status')
+    status_anterior = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, blank=True)
+    status_novo = models.CharField(max_length=20, choices=Pessoa.STATUS_CHOICES)
+    data = models.DateTimeField()
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Histórico de Status'
+        verbose_name_plural = 'Históricos de Status'
+        ordering = ['-data']
+    
+    def __str__(self):
+        return f"{self.pessoa.nome_completo}: {self.status_anterior} → {self.status_novo} em {self.data}"

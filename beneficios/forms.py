@@ -18,7 +18,6 @@ class PessoaForm(forms.ModelForm):
     arquivo = forms.FileField(
         required=False,
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'application/pdf'}),
-        #label='Documento PDF',
         help_text='Tamanho máximo: 10MB (.pdf)'
     )
     
@@ -32,11 +31,19 @@ class PessoaForm(forms.ModelForm):
         if self.instance.pk:
             self.fields['beneficio'].disabled = True
             self.fields['beneficio'].help_text = 'Não é possível alterar o benefício após o cadastro'
+            # Edição: 3 opções de status
+            self.fields['status'].choices = Pessoa.STATUS_CHOICES
+        else:
+            # Cadastro: apenas Ativo e Em Espera
+            self.fields['status'].choices = [
+                ('ativo', 'Ativo'),
+                ('em_espera', 'Em Espera'),
+            ]
     
     class Meta:
         model = Pessoa
         fields = ['nome_completo', 'cpf', 'sexo', 'data_nascimento', 'celular', 
-                  'endereco', 'bairro', 'cidade', 'valor_beneficio', 'beneficio']
+                  'endereco', 'bairro', 'cidade', 'valor_beneficio', 'beneficio', 'status']
         widgets = {
             'nome_completo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo'}),
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00'}),
@@ -48,6 +55,7 @@ class PessoaForm(forms.ModelForm):
             'cidade': forms.Select(attrs={'class': 'form-control'}),
             'valor_beneficio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'beneficio': forms.Select(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'nome_completo': 'Nome Completo',
@@ -58,8 +66,9 @@ class PessoaForm(forms.ModelForm):
             'endereco': 'Endereço',
             'bairro': 'Bairro',
             'cidade': 'Cidade',
-            'valor_beneficio': 'Valor do Benefício (R$)',
+            'valor_beneficio': 'Valor à Receber',
             'beneficio': 'Tipo de Benefício',
+            'status': 'Status',
         }
     
     def clean_arquivo(self):
@@ -111,13 +120,14 @@ class PessoaForm(forms.ModelForm):
         
         for pessoa in qs:
             if pessoa.cpf == cpf_formatado:
-                raise forms.ValidationError('CPF já cadastrado no sistema!')
+                if pessoa.status != 'desligado':
+                    raise forms.ValidationError(
+                        'CPF já cadastrado em um benefício ativo ou em espera! '
+                        'Só é permitido cadastrar o mesmo CPF se todos os registros anteriores estiverem desligados.'
+                    )
         
         return cpf_formatado
-    
-    def clean_nome_completo(self):
-        nome = self.cleaned_data.get('nome_completo')
-        return nome.title() if nome else nome
+        
 class DocumentoForm(forms.ModelForm):
     class Meta:
         model = Documento

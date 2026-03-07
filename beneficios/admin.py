@@ -28,8 +28,8 @@ class BeneficioAdmin(admin.ModelAdmin):
 
 @admin.register(Pessoa)
 class PessoaAdmin(admin.ModelAdmin):
-    list_display = ['ordem_alfabetica', 'nome_completo', 'cpf', 'status_display', 'valor_beneficio', 'acoes']
-    list_filter = ['ativo', 'beneficio', 'sexo']
+    list_display = ['ordem_alfabetica', 'nome_completo', 'cpf', 'status', 'valor_beneficio']
+    list_filter = ['status', 'beneficio', 'sexo']
     search_fields = ['nome_completo', 'cpf']
     readonly_fields = ['created_at', 'updated_at']
     
@@ -41,7 +41,7 @@ class PessoaAdmin(admin.ModelAdmin):
             'fields': ('endereco', 'bairro', 'cidade')
         }),
         ('Benefício', {
-            'fields': ('beneficio', 'valor_beneficio', 'ativo')
+            'fields': ('beneficio', 'valor_beneficio', 'status')
         }),
         ('Metadados', {
             'fields': ('created_at', 'updated_at'),
@@ -53,24 +53,6 @@ class PessoaAdmin(admin.ModelAdmin):
         pessoas = Pessoa.objects.order_by('nome_completo')
         return list(pessoas).index(obj) + 1
     ordem_alfabetica.short_description = 'ID'
-    
-    def status_display(self, obj):
-        return 'Ativo' if obj.ativo else 'Desativado'
-    status_display.short_description = 'Status'
-    
-    def acoes(self, obj):
-        from django.utils.html import format_html
-        if obj.ativo:
-            return format_html(
-                '<a class="button" href="{}">Desativar</a>',
-                f'/admin/beneficios/pessoa/{obj.id}/desativar/'
-            )
-        else:
-            return format_html(
-                '<a class="button" href="{}">Ativar</a>',
-                f'/admin/beneficios/pessoa/{obj.id}/ativar/'
-            )
-    acoes.short_description = 'Ações'
 
 @admin.register(Documento)
 class DocumentoAdmin(admin.ModelAdmin):

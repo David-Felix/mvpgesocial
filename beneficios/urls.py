@@ -13,7 +13,9 @@ urlpatterns = [
     # Pessoas
     path('pessoa/nova/', views.pessoa_create, name='pessoa_create'),
     path('pessoa/<int:pk>/editar/', views.pessoa_edit, name='pessoa_edit'),
-    path('pessoa/<int:pk>/toggle/', views.pessoa_toggle, name='pessoa_toggle'),
+    path('pessoa/<int:pk>/ativar/', views.pessoa_ativar, name='pessoa_ativar'),
+    path('pessoa/<int:pk>/espera/', views.pessoa_espera, name='pessoa_espera'),
+    path('pessoa/<int:pk>/desligar/', views.pessoa_desligar, name='pessoa_desligar'),
     path('pessoa/<int:pk>/documento/', views.pessoa_documento, name='pessoa_documento'),
     path('documento/<int:pk>/visualizar/', views.documento_protegido, name='documento_protegido'),
  

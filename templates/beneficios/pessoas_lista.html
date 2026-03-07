@@ -46,6 +46,11 @@
                             <span class="label">Ativos</span>
                         </li>
                         <li>
+                            <div class="icone icon-warning"><i class="bi bi-hourglass-split"></i></div>
+                            <span class="valor">{{ total_em_espera }}</span>
+                            <span class="label">Em Espera</span>
+                        </li>
+                        <li>
                             <div class="icone icon-danger"><i class="bi bi-x-circle"></i></div>
                             <span class="valor">{{ total_desativados }}</span>
                             <span class="label">Desligados</span>
@@ -122,9 +127,10 @@
                     <div class="col-xl-2 col-lg-2 col-md-3 col-sm-4">
                         <label class="form-label small">Status</label>
                         <select name="status" class="form-control">
-                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativo</option>
-                            <option value="desativado" {% if filtros.status == 'desativado' %}selected{% endif %}>Desligado</option>
-                            <option value="">Todos</option>
+                            <option value="ativo" {% if filtros.status == 'ativo' %}selected{% endif %}>Ativos</option>
+                            <option value="em_espera" {% if filtros.status == 'em_espera' %}selected{% endif %}>Em Espera</option>
+                            <option value="desligado" {% if filtros.status == 'desligado' %}selected{% endif %}>Desligados</option>
+                            <option value="" {% if not filtros.status %}selected{% endif %}>Todos</option>
                         </select>
                     </div>
                     
@@ -179,8 +185,10 @@
                             <td>{{ pessoa.cpf }}</td>
                             <td>{{ pessoa.valor_beneficio|floatformat:2 }}</td>
                             <td>
-                                {% if pessoa.ativo %}
+                                {% if pessoa.status == 'ativo' %}
                                 <span class="badge bg-success">Ativo</span>
+                                {% elif pessoa.status == 'em_espera' %}
+                                <span class="badge bg-warning text-dark">Em Espera</span>
                                 {% else %}
                                 <span class="badge bg-danger">Desligado</span>
                                 {% endif %}
@@ -193,8 +201,15 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     
-                                    {% if pessoa.ativo %}
-                                    <a href="{% url 'pessoa_toggle' pessoa.pk %}" 
+                                    {% if pessoa.status == 'ativo' %}
+                                    <a href="{% url 'pessoa_espera' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-warning"
+                                       onclick="return confirm('Mover para lista de espera?')"
+                                       title="Lista de Espera">
+                                        <i class="bi bi-hourglass-split"></i>
+                                    </a>
+                                    
+                                    <a href="{% url 'pessoa_desligar' pessoa.pk %}" 
                                        class="btn btn-sm btn-outline-danger"
                                        onclick="return confirm('Desligar esta pessoa?')"
                                        title="Desligar">
@@ -230,8 +245,16 @@
                                     </a>
                                     {% endif %}
                                     
+                                    {% elif pessoa.status == 'em_espera' %}
+                                    <a href="{% url 'pessoa_ativar' pessoa.pk %}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       onclick="return confirm('Ativar esta pessoa?')"
+                                       title="Ativar">
+                                        <i class="bi bi-play-circle"></i>
+                                    </a>
+                                    
                                     {% else %}
-                                    <a href="{% url 'pessoa_toggle' pessoa.pk %}" 
+                                    <a href="{% url 'pessoa_ativar' pessoa.pk %}" 
                                        class="btn btn-sm btn-outline-success"
                                        onclick="return confirm('Ativar esta pessoa?')"
                                        title="Ativar">
@@ -290,19 +313,19 @@
 
             <!-- Botões em Massa -->
             <div class="d-flex justify-content-end mt-4 gap-2">
-                <a href="{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
-                   class="btn btn-outline-info" 
-                   target="_blank">
+                <a href="javascript:void(0)"
+                   onclick="abrirMassa('{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
+                   class="btn btn-outline-info">
                     <i class="bi bi-file-earmark-text"></i> Memorando em Massa
                 </a>
-                <a href="{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
-                   class="btn btn-outline-success" 
-                   target="_blank">
+                <a href="javascript:void(0)"
+                   onclick="abrirMassa('{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
+                   class="btn btn-outline-success">
                     <i class="bi bi-receipt-cutoff"></i> Recibos em Massa
                 </a>
-                <a href="{% url 'gerar_documentos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}" 
-                   class="btn btn-outline-dark" 
-                   target="_blank">
+                <a href="javascript:void(0)"
+                   onclick="abrirMassa('{% url 'gerar_documentos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
+                   class="btn btn-outline-dark">
                     <i class="bi bi-file-pdf"></i> Documentos em Massa
                 </a>
             </div>
@@ -326,4 +349,22 @@
         </div>
     </div>
 </div>
+<script>
+function abrirMassa(url) {
+    fetch(url, { redirect: 'manual' }).then(response => {
+        if (response.type === 'opaqueredirect') {
+            window.scrollTo(0, 0);
+            window.location.href = window.location.pathname + '?' + new URLSearchParams(window.location.search).toString();
+        } else if (response.headers.get('Content-Type')?.includes('application/pdf')) {
+            window.open(url, '_blank');
+        } else {
+            window.scrollTo(0, 0);
+            window.location.href = window.location.pathname + '?' + new URLSearchParams(window.location.search).toString();
+        }
+    }).catch(() => {
+        window.scrollTo(0, 0);
+        window.location.href = window.location.pathname + '?' + new URLSearchParams(window.location.search).toString();
+    });
+}
+</script>
 {% endblock %}

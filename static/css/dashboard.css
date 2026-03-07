@@ -43,6 +43,11 @@
     color: white;
 }
 
+.icon-warning {
+    background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);
+    color: white;
+}
+
 .overview-value {
     font-size: 1.3rem;
     font-weight: 700;
@@ -529,4 +534,27 @@
 
 .filtros-compactos .text-muted {
     font-size: 0.75rem;
+}
+/* ========== ICON WARNING (Em Espera) ========== */
+.icon-warning {
+    background: linear-gradient(135deg, #f6e05e, #ecc94b);
+    color: #744210;
+}
+
+/* ========== TIMELINE STATUS (Histórico) ========== */
+.timeline-status .timeline-item {
+    padding-left: 0.5rem;
+    border-left: 2px solid #e2e8f0;
+}
+
+.timeline-status .timeline-item:last-child {
+    border-left-color: transparent;
+}
+
+.timeline-status .timeline-icon .badge {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
