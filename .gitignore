@@ -20,6 +20,7 @@ db.sqlite3-journal
 # Sensitive
 .env
 *.sqlite3
+*.sql
 
 # IDEs
 .vscode/
