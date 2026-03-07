@@ -52,7 +52,7 @@
                 <div class="ps-4">
                     {% for beneficio in beneficios_menu %}
                     <a class="nav-link" href="{% url 'pessoas_por_beneficio' beneficio.id %}">
-                        <i class="bi {{ beneficio.icone }}"></i> {{ beneficio.nome }}
+                        <i class="bi {{ beneficio.icone }}"></i> {{ beneficio.nome_exibicao }}
                     </a>
                     {% empty %}
                     <a class="nav-link text-muted">

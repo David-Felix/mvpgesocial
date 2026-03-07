@@ -18,6 +18,7 @@ class Beneficio(models.Model):
     ]
     
     nome = models.CharField(max_length=100, unique=True)
+    descricao = models.CharField(max_length=200, blank=True, default='', verbose_name='Descrição')
     conta_pagadora = models.CharField(max_length=200, blank=True)
     icone = models.CharField(max_length=30, choices=ICONE_CHOICES, default='bi-wallet2')
     ativo = models.BooleanField(default=True)
@@ -29,8 +30,12 @@ class Beneficio(models.Model):
         verbose_name_plural = 'Benefícios'
         ordering = ['nome']
     
+    @property
+    def nome_exibicao(self):
+        return self.descricao if self.descricao else self.nome
+
     def __str__(self):
-        return self.nome
+        return self.nome_exibicao
 
 class Pessoa(models.Model):
     """Cadastro de pessoas beneficiárias"""

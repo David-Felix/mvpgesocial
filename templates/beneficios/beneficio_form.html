@@ -28,7 +28,16 @@
                                    placeholder="Ex: Auxílio Alimentação"
                                    required>
                             <div class="form-text">
-                                <i class="bi bi-info-circle"></i> Nome que identifica o benefício
+                                <i class="bi bi-info-circle"></i> Nome que aparece nos documentos oficiais.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição (exibida no sistema)</label>
+                            <input type="text" name="descricao" class="form-control" 
+                                   placeholder="Se vazio, usa o nome oficial"
+                                   value="{{ beneficio.descricao|default:'' }}">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle text-info"></i> Nome para identificar o benefício no sistema.
                             </div>
                         </div>
                         

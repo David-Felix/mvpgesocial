@@ -42,7 +42,7 @@ def dashboard(request):
         
         stats_list.append({
             'id': beneficio.id,
-            'nome': beneficio.nome,
+            'nome': beneficio.nome_exibicao,
             'icone': icone,  
             'cor_classe': classes[idx % len(classes)],
             'total': stats['total_pessoas'],
@@ -472,9 +472,10 @@ def beneficio_create(request):
         nome = request.POST.get('nome')
         conta_pagadora = request.POST.get('conta_pagadora', '')
         icone = request.POST.get('icone', 'bi-wallet2')
+        descricao = request.POST.get('descricao', '')
         
         if nome:
-            Beneficio.objects.create(nome=nome, conta_pagadora=conta_pagadora, icone=icone)
+            Beneficio.objects.create(nome=nome, descricao=descricao, conta_pagadora=conta_pagadora, icone=icone)
             messages.success(request, f'Benefício {nome} criado com sucesso!')
             return redirect('beneficios_list')
         else:
@@ -492,6 +493,7 @@ def beneficio_edit_form(request, pk):
     
     if request.method == 'POST':
         beneficio.nome = request.POST.get('nome', beneficio.nome)
+        beneficio.descricao = request.POST.get('descricao', '')
         beneficio.conta_pagadora = request.POST.get('conta_pagadora', '')
         beneficio.icone = request.POST.get('icone', beneficio.icone)
         beneficio.save()
@@ -1001,8 +1003,8 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.0.1',
-        'data_compilacao': '11/02/2026',
+        'versao': '1.1.1',
+        'data_compilacao': '03/03/2026',
         'total_usuarios': '10',
         'total_programas': Beneficio.objects.filter(ativo=True).count(),
     }
