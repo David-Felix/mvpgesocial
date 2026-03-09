@@ -10,6 +10,7 @@ from .services import registrar_memorando
 from .forms import PessoaForm, DocumentoForm
 from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from decimal import Decimal
 import os
 
@@ -1225,3 +1226,109 @@ def gerar_remessa_banco(request, beneficio_id):
     )
     response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
     return response
+
+@login_required
+def relatorio_beneficiarios(request):
+    """Página de filtros do relatório de beneficiários"""
+    beneficios = Beneficio.objects.filter(ativo=True).order_by('nome')
+    
+    # Buscar bairros distintos
+    bairros = (Pessoa.objects.values_list('bairro', flat=True)
+               .distinct().order_by('bairro'))
+    
+    context = {
+        'beneficios_lista': beneficios,
+        'bairros': bairros,
+        'titulo': 'Relatório de Beneficiários',
+    }
+    return render(request, 'beneficios/relatorio_beneficiarios.html', context)
+
+@xframe_options_sameorigin
+@login_required
+def gerar_relatorio_beneficiarios(request):
+    """Gera relatório de beneficiários em PDF ou Excel"""
+    from datetime import datetime
+    
+    # Captura filtros
+    f_beneficio = request.GET.get('beneficio', '').strip()
+    f_status = request.GET.get('status', '').strip()
+    f_valor = request.GET.get('valor', '').replace(',', '.').strip()
+    f_bairro = request.GET.get('bairro', '').strip()
+    f_sexo = request.GET.get('sexo', '').strip()
+    f_data_de = request.GET.get('data_de', '').strip()
+    f_data_ate = request.GET.get('data_ate', '').strip()
+    f_formato = request.GET.get('formato', 'pdf').strip()
+    
+    # Query base
+    pessoas_query = Pessoa.objects.select_related('beneficio').order_by('beneficio__nome', 'nome_completo')
+    
+    # Filtro benefício
+    if f_beneficio and f_beneficio.isdigit():
+        pessoas_query = pessoas_query.filter(beneficio_id=int(f_beneficio))
+        beneficio_nome = Beneficio.objects.filter(id=int(f_beneficio)).values_list('nome', flat=True).first() or 'Todos'
+    else:
+        pessoas_query = pessoas_query.filter(beneficio__ativo=True)
+        beneficio_nome = 'Todos os Benefícios'
+    
+    # Filtro status
+    if f_status and f_status != 'todos':
+        pessoas_query = pessoas_query.filter(status=f_status)
+        status_label = dict(Pessoa.STATUS_CHOICES).get(f_status, f_status)
+    else:
+        status_label = 'Todos'
+    
+    # Filtro valor
+    if f_valor:
+        try:
+            pessoas_query = pessoas_query.filter(valor_beneficio=float(f_valor))
+        except ValueError:
+            pass
+    
+    # Filtro bairro
+    if f_bairro:
+        pessoas_query = pessoas_query.filter(bairro=f_bairro)
+    
+    # Filtro sexo
+    if f_sexo and f_sexo != 'todos':
+        pessoas_query = pessoas_query.filter(sexo=f_sexo)
+    
+    # Filtro período de cadastro
+    if f_data_de:
+        try:
+            data_de = datetime.strptime(f_data_de, '%Y-%m-%d')
+            pessoas_query = pessoas_query.filter(created_at__date__gte=data_de)
+        except ValueError:
+            pass
+    
+    if f_data_ate:
+        try:
+            data_ate = datetime.strptime(f_data_ate, '%Y-%m-%d')
+            pessoas_query = pessoas_query.filter(created_at__date__lte=data_ate)
+        except ValueError:
+            pass
+    
+    pessoas = list(pessoas_query)
+
+    if not pessoas:
+        messages.error(request, 'Nenhuma pessoa encontrada com os filtros aplicados!')
+        return redirect('relatorio_beneficiarios')
+    
+    # Totalizadores
+    total_pessoas = len(pessoas)
+    total_valor = sum(p.valor_beneficio for p in pessoas)
+    total_ativos = sum(1 for p in pessoas if p.status == 'ativo')
+    total_espera = sum(1 for p in pessoas if p.status == 'em_espera')
+    total_desligados = sum(1 for p in pessoas if p.status == 'desligado')
+    
+    if f_formato == 'xlsx':
+        from .utils import gerar_excel_beneficiarios
+        return gerar_excel_beneficiarios(
+            pessoas, beneficio_nome, status_label,
+            total_pessoas, total_valor, total_ativos, total_espera, total_desligados
+        )
+    else:
+        from .utils import gerar_pdf_beneficiarios
+        return gerar_pdf_beneficiarios(
+            pessoas, beneficio_nome, status_label,
+            total_pessoas, total_valor, total_ativos, total_espera, total_desligados
+        )

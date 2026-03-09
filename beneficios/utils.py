@@ -432,3 +432,216 @@ def gerar_memorando_segunda_via_pdf(memorando):
     c.save()
     buffer.seek(0)
     return buffer
+
+def gerar_pdf_beneficiarios(pessoas, beneficio_nome, status_label, 
+                             total_pessoas, total_valor, total_ativos, total_espera, total_desligados):
+    """Gera PDF do relatório de beneficiários"""
+    from io import BytesIO
+    from datetime import datetime
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm, cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+    from django.http import HttpResponse
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), 
+                           leftMargin=15*mm, rightMargin=15*mm, 
+                           topMargin=15*mm, bottomMargin=15*mm)
+
+    doc.title = 'Relatório de Beneficiários'
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # Brasão
+    caminho_brasao = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static', 'images', 'brasao.jpg')
+    if os.path.exists(caminho_brasao):
+        img = Image(caminho_brasao, width=1.5*cm, height=1.5*cm)
+        img.hAlign = 'CENTER'
+        elements.append(img)
+        elements.append(Spacer(1, 2*mm))
+    
+    # Cabeçalho institucional
+    centro_style = ParagraphStyle('Centro', parent=styles['Normal'], fontSize=10, alignment=TA_CENTER, leading=14, fontName='Helvetica-Bold')
+    elements.append(Paragraph('ESTADO DA PARAÍBA', centro_style))
+    elements.append(Paragraph('PREFEITURA MUNICIPAL DE POCINHOS', centro_style))
+    elements.append(Paragraph('SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL', centro_style))
+    elements.append(Spacer(1, 5*mm))
+    
+    # Título do relatório
+    titulo_style = ParagraphStyle('Titulo', parent=styles['Normal'], fontSize=12, alignment=TA_CENTER, fontName='Helvetica-Bold', spaceAfter=3)
+    subtitulo_style = ParagraphStyle('Subtitulo', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER, textColor=colors.grey, spaceAfter=8)
+    
+    elements.append(Paragraph('RELATÓRIO DE BENEFICIÁRIOS', titulo_style))
+    elements.append(Paragraph(
+        f'Benefício: {beneficio_nome} | Status: {status_label} | '
+        f'Gerado em: {datetime.now().strftime("%d/%m/%Y %H:%M")}',
+        subtitulo_style
+    ))
+    elements.append(Spacer(1, 3*mm))
+    
+    # Tabela de dados
+    header = ['Nº', 'Nome Completo', 'CPF', 'Benefício', 'Valor (R$)', 'Status', 'Bairro', 'Cadastro']
+    data = [header]
+    status_map = {'ativo': 'Ativo', 'em_espera': 'Em Espera', 'desligado': 'Desligado'}
+    
+    for idx, p in enumerate(pessoas, 1):
+        cpf_numeros = ''.join(filter(str.isdigit, p.cpf))
+        if len(cpf_numeros) == 11:
+            cpf_display = f'{cpf_numeros[:3]}.{cpf_numeros[3:6]}.{cpf_numeros[6:9]}-{cpf_numeros[9:]}'
+        else:
+            cpf_display = p.cpf
+        
+        valor_fmt = f"{p.valor_beneficio:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        
+        data.append([
+            str(idx),
+            Paragraph(p.nome_completo, ParagraphStyle('Cell', fontSize=7, leading=9)),
+            cpf_display,
+            Paragraph(p.beneficio.nome, ParagraphStyle('Cell', fontSize=7, leading=9)),
+            valor_fmt,
+            status_map.get(p.status, p.status),
+            Paragraph(p.bairro, ParagraphStyle('Cell', fontSize=7, leading=9)),
+            p.created_at.strftime('%d/%m/%Y'),
+        ])
+    
+    col_widths = [25, 170, 75, 95, 55, 55, 80, 55]
+    
+    table = Table(data, colWidths=col_widths, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4a7cff')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN', (4, 0), (4, -1), 'RIGHT'),
+        ('ALIGN', (5, 0), (5, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 8*mm))
+    
+    # Totalizadores fora da tabela
+    valor_total_fmt = f"{total_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    resumo_style = ParagraphStyle('Resumo', parent=styles['Normal'], fontSize=9, leading=14)
+    
+    elements.append(Paragraph(f'<b>Total de pessoas:</b> {total_pessoas}', resumo_style))
+    elements.append(Paragraph(f'<b>Valor total mensal:</b> R$ {valor_total_fmt}', resumo_style))
+    elements.append(Spacer(1, 3*mm))
+    elements.append(Paragraph(f'<b>Ativos:</b> {total_ativos} &nbsp;&nbsp; | &nbsp;&nbsp; <b>Em Espera:</b> {total_espera} &nbsp;&nbsp; | &nbsp;&nbsp; <b>Desligados:</b> {total_desligados}', resumo_style))
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="relatorio_beneficiarios.pdf"'
+    return response
+
+
+def gerar_excel_beneficiarios(pessoas, beneficio_nome, status_label,
+                               total_pessoas, total_valor, total_ativos, total_espera, total_desligados):
+    """Gera Excel do relatório de beneficiários"""
+    from io import BytesIO
+    from datetime import datetime
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Beneficiários'
+    
+    # Estilos
+    header_font = Font(bold=True, color='FFFFFF', size=10)
+    header_fill = PatternFill(start_color='4A7CFF', end_color='4A7CFF', fill_type='solid')
+    header_align = Alignment(horizontal='center', vertical='center')
+    border = Border(
+        left=Side(style='thin', color='DEE2E6'),
+        right=Side(style='thin', color='DEE2E6'),
+        top=Side(style='thin', color='DEE2E6'),
+        bottom=Side(style='thin', color='DEE2E6'),
+    )
+    
+    # Título
+    ws.merge_cells('A1:H1')
+    ws['A1'] = 'Relatório de Beneficiários'
+    ws['A1'].font = Font(bold=True, size=14)
+    
+    ws.merge_cells('A2:H2')
+    ws['A2'] = f'Benefício: {beneficio_nome} | Status: {status_label} | Gerado em: {datetime.now().strftime("%d/%m/%Y %H:%M")}'
+    ws['A2'].font = Font(size=9, color='808080')
+    
+    # Cabeçalho
+    headers = ['Nº', 'Nome Completo', 'CPF', 'Benefício', 'Valor (R$)', 'Status', 'Bairro', 'Cadastro']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=4, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = border
+    
+    # Dados
+    status_map = {'ativo': 'Ativo', 'em_espera': 'Em Espera', 'desligado': 'Desligado'}
+    
+    for idx, p in enumerate(pessoas, 1):
+        row = idx + 4
+        cpf_numeros = ''.join(filter(str.isdigit, p.cpf))
+        if len(cpf_numeros) == 11:
+            cpf_display = f'{cpf_numeros[:3]}.{cpf_numeros[3:6]}.{cpf_numeros[6:9]}-{cpf_numeros[9:]}'
+        else:
+            cpf_display = p.cpf
+        
+        ws.cell(row=row, column=1, value=idx).border = border
+        ws.cell(row=row, column=2, value=p.nome_completo).border = border
+        ws.cell(row=row, column=3, value=cpf_display).border = border
+        ws.cell(row=row, column=4, value=p.beneficio.nome).border = border
+        cell_valor = ws.cell(row=row, column=5, value=float(p.valor_beneficio))
+        cell_valor.number_format = '#,##0.00'
+        cell_valor.border = border
+        ws.cell(row=row, column=6, value=status_map.get(p.status, p.status)).border = border
+        ws.cell(row=row, column=7, value=p.bairro).border = border
+        ws.cell(row=row, column=8, value=p.created_at.strftime('%d/%m/%Y')).border = border
+        
+        if idx % 2 == 0:
+            for col in range(1, 9):
+                ws.cell(row=row, column=col).fill = PatternFill(start_color='F8F9FA', end_color='F8F9FA', fill_type='solid')
+    
+    # Totalizadores
+    total_row = len(pessoas) + 5
+    total_fill = PatternFill(start_color='E9ECEF', end_color='E9ECEF', fill_type='solid')
+    total_font = Font(bold=True, size=10)
+    
+    ws.cell(row=total_row, column=2, value=f'Total: {total_pessoas} pessoas').font = total_font
+    ws.cell(row=total_row, column=5, value=float(total_valor)).font = total_font
+    ws.cell(row=total_row, column=5).number_format = '#,##0.00'
+    ws.cell(row=total_row, column=6, value=f'Ativos: {total_ativos} | Em Espera: {total_espera} | Desligados: {total_desligados}').font = total_font
+    
+    for col in range(1, 9):
+        ws.cell(row=total_row, column=col).fill = total_fill
+        ws.cell(row=total_row, column=col).border = border
+    
+    # Larguras
+    ws.column_dimensions['A'].width = 6
+    ws.column_dimensions['B'].width = 35
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 20
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 12
+    ws.column_dimensions['G'].width = 18
+    ws.column_dimensions['H'].width = 12
+    
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="relatorio_beneficiarios.xlsx"'
+    return response

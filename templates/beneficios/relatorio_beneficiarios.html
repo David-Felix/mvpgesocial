@@ -1,0 +1,152 @@
+{% extends 'beneficios/base.html' %}
+{% load static %}
+{% block title %}Relatório de Beneficiários - Sistema de Benefícios{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card form-panel">
+                <div class="card-header">
+                    <i class="bi bi-people"></i> Relatório de Beneficiários
+                </div>
+                <div class="card-body">
+                    <form id="formRelatorio" method="get" action="{% url 'gerar_relatorio_beneficiarios' %}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Benefício</label>
+                                <select name="beneficio" class="form-control">
+                                    <option value="">Todos os Benefícios</option>
+                                    {% for b in beneficios_lista %}
+                                    <option value="{{ b.id }}">{{ b.nome_exibicao }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-control">
+                                    <option value="todos">Todos</option>
+                                    <option value="ativo">Ativo</option>
+                                    <option value="em_espera">Em Espera</option>
+                                    <option value="desligado">Desligado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Valor (R$)</label>
+                                <input type="text" name="valor" class="form-control">
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle text-info"></i> Deixe vazio para todos os valores
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Bairro</label>
+                                <select name="bairro" class="form-control">
+                                    <option value="">Todos</option>
+                                    {% for bairro in bairros %}
+                                    <option value="{{ bairro }}">{{ bairro }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Sexo</label>
+                                <select name="sexo" class="form-control">
+                                    <option value="todos">Todos</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Feminino</option>
+                                    <option value="O">Outro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cadastrado a partir de</label>
+                                <input type="date" name="data_de" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cadastrado até</label>
+                                <input type="date" name="data_ate" class="form-control">
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-danger" onclick="abrirPDFModal()">
+                                    <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+                                </button>
+                                <button type="submit" name="formato" value="xlsx" class="btn btn-success">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> Gerar Excel
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal PDF -->
+<div class="modal fade" id="modalPDF" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-pdf"></i> Relatório de Beneficiários</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="pdfViewer" style="width: 100%; height: 75vh; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a id="pdfDownload" href="#" target="_blank" class="btn btn-success">
+                    <i class="bi bi-download"></i> Baixar PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirPDFModal() {
+    var form = document.getElementById('formRelatorio');
+    var params = new URLSearchParams(new FormData(form));
+    params.set('formato', 'pdf');
+    var url = '{% url "gerar_relatorio_beneficiarios" %}?' + params.toString();
+    
+    fetch(url, { redirect: 'manual' }).then(response => {
+        if (response.type === 'opaqueredirect') {
+            // Erro - recarrega para mostrar mensagem
+            window.scrollTo(0, 0);
+            window.location.href = window.location.pathname;
+        } else if (response.headers.get('Content-Type')?.includes('application/pdf')) {
+            // PDF gerado - abre no modal
+            document.getElementById('pdfViewer').src = url;
+            document.getElementById('pdfDownload').href = url;
+            var modal = new bootstrap.Modal(document.getElementById('modalPDF'));
+            modal.show();
+        } else {
+            window.scrollTo(0, 0);
+            window.location.href = window.location.pathname;
+        }
+    }).catch(() => {
+        window.scrollTo(0, 0);
+        window.location.href = window.location.pathname;
+    });
+}
+</script>
+{% endblock %}

@@ -52,10 +52,15 @@ urlpatterns = [
     path('memorandos/', views.memorandos_lista, name='memorandos_lista'),
     path('memorandos/<int:pk>/segunda-via/', views.memorando_segunda_via, name='memorando_segunda_via'),
 
+    # Relatórios
+    path('relatorios/beneficiarios/', views.relatorio_beneficiarios, name='relatorio_beneficiarios'),
+    path('relatorios/beneficiarios/gerar/', views.gerar_relatorio_beneficiarios, name='gerar_relatorio_beneficiarios'),
+
     # Configurações Gerais
     path('configuracoes/', views.configuracoes_gerais, name='configuracoes_gerais'),
 
     # Senha
     path('trocar-senha/', views.trocar_senha, name='trocar_senha'),
+
 
 ]

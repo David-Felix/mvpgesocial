@@ -69,6 +69,22 @@
             <a class="nav-link" href="{% url 'memorandos_lista' %}">
                 <i class="bi bi-file-earmark-text"></i> Histórico de Memorandos
             </a>
+            <!-- Submenu Relatórios -->
+            {% if user.is_superuser %}
+            <a class="nav-link" data-bs-toggle="collapse" href="#submenuRelatorios" role="button" aria-expanded="false">
+                <i class="bi bi-clipboard-data"></i> Relatórios
+            </a>
+            <div class="collapse" id="submenuRelatorios">
+                <div class="ps-4">
+                    <a class="nav-link" href="{% url 'relatorio_beneficiarios' %}">
+                        <i class="bi bi-people"></i> Relatório de Beneficiários
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-currency-dollar"></i> Relatório Financeiro
+                    </a>
+                </div>
+            </div>
+            {% endif %}
             {% if user.is_staff %}
             <a class="nav-link" href="{% url 'usuarios_list' %}">
                 <i class="bi bi-people-fill"></i> Gerenciar Usuários
@@ -79,20 +95,15 @@
                 <i class="bi bi-sliders"></i> Configurações Gerais
             </a>
             {% endif %}
-            
+            {% if user.is_staff %}
             <a class="nav-link" href="#"> 
                 <i class="bi bi-cloud-upload"></i> Backup
             </a>
-            
+            {% endif %}     
             <hr>
-            
             <a class="nav-link" href="{% url 'sobre' %}"> 
                 <i class="bi bi-info-circle"></i> Sobre
             </a>
-            <a class="nav-link" href="#"> 
-                <i class="bi bi-question-circle"></i> Ajuda
-            </a>
-            
             {% if user.is_superuser %}
             <hr>
             <a class="nav-link" href="/panel-super-gesocial/">
