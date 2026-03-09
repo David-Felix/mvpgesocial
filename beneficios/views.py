@@ -1003,10 +1003,10 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.1.1',
-        'data_compilacao': '03/03/2026',
+        'versao': '1.2.0',
+        'data_compilacao': '09/03/2026',
         'total_usuarios': '10',
-        'total_programas': Beneficio.objects.filter(ativo=True).count(),
+        'total_programas': '2',
     }
     return render(request, 'beneficios/sobre.html', context)
 
@@ -1122,3 +1122,106 @@ def trocar_senha(request):
         'obrigatorio': obrigatorio,
     }
     return render(request, 'beneficios/trocar_senha.html', context)
+
+@login_required
+def gerar_remessa_banco(request, beneficio_id):
+    """Gera arquivo CSV de remessa bancária respeitando filtros aplicados"""
+    import csv
+    from io import StringIO
+    
+    beneficio = get_object_or_404(Beneficio, pk=beneficio_id)
+    
+    # Captura filtros da URL
+    f_nome = request.GET.get('nome', '').strip()
+    f_cpf = request.GET.get('cpf', '').strip()
+    f_status = request.GET.get('status', '').strip()
+    f_valor = request.GET.get('valor', '').replace(',', '.')
+    f_pos_de = request.GET.get('id_de', '').strip()
+    f_pos_ate = request.GET.get('id_ate', '').strip()
+    
+    # Bloqueio: apenas status ativo
+    if f_status != 'ativo':
+        messages.error(request, 'Geração de remessa é permitida apenas com filtro de status "Ativo"!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+    
+    # Bloqueio de posições inválidas
+    if (f_pos_de and not f_pos_de.isdigit()) or (f_pos_ate and not f_pos_ate.isdigit()):
+        messages.error(request, 'Parâmetros de posição inválidos!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+    
+    # Query base: apenas ativos
+    pessoas_query = Pessoa.objects.filter(beneficio=beneficio, status='ativo').order_by('nome_completo')
+    
+    # Filtros
+    if f_nome:
+        pessoas_query = pessoas_query.filter(nome_completo__icontains=f_nome)
+    
+    if f_valor:
+        try:
+            pessoas_query = pessoas_query.filter(valor_beneficio=float(f_valor))
+        except ValueError:
+            pass
+    
+    if f_cpf:
+        cpf_limpo = ''.join(filter(str.isdigit, f_cpf))
+        if cpf_limpo:
+            if len(cpf_limpo) >= 4:
+                ultimos_4 = cpf_limpo[-4:]
+                candidatos = pessoas_query.filter(cpf_ultimos_4=ultimos_4).only('id', 'cpf')
+            else:
+                candidatos = pessoas_query.only('id', 'cpf')
+            ids_validos = [p.pk for p in candidatos if cpf_limpo in ''.join(filter(str.isdigit, p.cpf))]
+            pessoas_query = pessoas_query.filter(pk__in=ids_validos)
+    
+    # Filtro de posição
+    try:
+        if f_pos_de and f_pos_ate:
+            pos_de = int(f_pos_de)
+            pos_ate = int(f_pos_ate)
+            if pos_de >= 1 and pos_ate >= pos_de:
+                pessoas_query = pessoas_query[pos_de-1:pos_ate]
+        elif f_pos_de:
+            pos_de = int(f_pos_de)
+            if pos_de >= 1:
+                pessoas_query = pessoas_query[pos_de-1:]
+        elif f_pos_ate:
+            pos_ate = int(f_pos_ate)
+            pessoas_query = pessoas_query[:pos_ate]
+    except ValueError:
+        pass
+    
+    pessoas = list(pessoas_query)
+    
+    if not pessoas:
+        messages.error(request, 'Nenhuma pessoa ativa encontrada com os filtros aplicados!')
+        return redirect('pessoas_por_beneficio', beneficio_id=beneficio_id)
+    
+    # Montar nome do arquivo
+    nome_beneficio = beneficio.nome.upper()
+    if f_valor:
+        try:
+            valor_formatado = f"{float(f_valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            nome_arquivo = f"Poupanca Social POCINHOS - {nome_beneficio} - {valor_formatado}.csv"
+        except ValueError:
+            nome_arquivo = f"Poupanca Social POCINHOS - {nome_beneficio}.csv"
+    else:
+        nome_arquivo = f"Poupanca Social POCINHOS - {nome_beneficio}.csv"
+    
+    # Gerar CSV
+    output = StringIO()
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_NONE, escapechar='\\')
+    writer.writerow(['CPF', 'NOME', 'VALOR', 'OBSERVACAO'])
+    
+    for pessoa in pessoas:
+        cpf_numeros = ''.join(filter(str.isdigit, pessoa.cpf))
+        nome = pessoa.nome_completo.upper()
+        valor = f"{pessoa.valor_beneficio:.2f}"
+        writer.writerow([cpf_numeros, nome, valor, 'CEP 58150000'])
+    
+    # Response com BOM para Excel
+    response = HttpResponse(
+        '\ufeff' + output.getvalue(),
+        content_type='text/csv; charset=utf-8'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+    return response

@@ -313,22 +313,30 @@
             </div>
 
             <!-- Botões em Massa -->
-            <div class="d-flex justify-content-end mt-4 gap-2">
-                <a href="javascript:void(0)"
-                   onclick="abrirMassa('{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
-                   class="btn btn-outline-info">
-                    <i class="bi bi-file-earmark-text"></i> Memorando em Massa
-                </a>
-                <a href="javascript:void(0)"
-                   onclick="abrirMassa('{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
-                   class="btn btn-outline-success">
-                    <i class="bi bi-receipt-cutoff"></i> Recibos em Massa
-                </a>
-                <a href="javascript:void(0)"
-                   onclick="abrirMassa('{% url 'gerar_documentos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
-                   class="btn btn-outline-dark">
-                    <i class="bi bi-file-pdf"></i> Documentos em Massa
-                </a>
+            <div class="d-flex justify-content-between mt-4">
+                <div>
+                    <a href="{% url 'gerar_remessa_banco' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-filetype-csv"></i> Arquivo Remessa
+                    </a>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="javascript:void(0)"
+                       onclick="abrirMassa('{% url 'gerar_memorando_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
+                       class="btn btn-outline-info">
+                        <i class="bi bi-file-earmark-text"></i> Memorando em Massa
+                    </a>
+                    <a href="javascript:void(0)"
+                       onclick="abrirMassa('{% url 'gerar_recibos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
+                       class="btn btn-outline-success">
+                        <i class="bi bi-receipt-cutoff"></i> Recibos em Massa
+                    </a>
+                    <a href="javascript:void(0)"
+                       onclick="abrirMassa('{% url 'gerar_documentos_massa' beneficio.id %}?nome={{ filtros.nome }}&cpf={{ filtros.cpf }}&status={{ filtros.status }}&valor={{ filtros.valor }}&id_de={{ filtros.id_de }}&id_ate={{ filtros.id_ate }}')"
+                       class="btn btn-outline-dark">
+                        <i class="bi bi-file-pdf"></i> Documentos em Massa
+                    </a>
+                </div>
             </div>
             {% else %}
             <div class="text-center py-5">

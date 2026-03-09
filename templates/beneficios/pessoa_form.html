@@ -123,7 +123,7 @@
                                 {% if documento_atual %}
                                 <div class="alert alert-info mb-3">
                                     <strong>Visualizar Documento:</strong> 
-                                    <a href="{% url 'documento_protegido' documento_atual.pk %}" target="_blank"><i class="bi bi-eye"></i></a>
+                                    <a href="{% url 'documento_protegido' pessoa.pk %}" target="_blank"><i class="bi bi-eye"></i></a>
                                 </div>
                                 {% endif %}
                                 

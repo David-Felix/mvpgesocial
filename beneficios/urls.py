@@ -43,6 +43,7 @@ urlpatterns = [
     path('beneficio/<int:beneficio_id>/memorando-massa/', views.gerar_memorando_massa, name='gerar_memorando_massa'),
     path('beneficio/<int:beneficio_id>/recibos-massa/', views.gerar_recibos_massa, name='gerar_recibos_massa'),
     path('beneficio/<int:beneficio_id>/documentos-massa/', views.gerar_documentos_massa, name='gerar_documentos_massa'),
+    path('beneficio/<int:beneficio_id>/remessa-banco/', views.gerar_remessa_banco, name='gerar_remessa_banco'),
 
     # Sobre
     path('sobre/', views.sobre, name='sobre'),
