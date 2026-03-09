@@ -1004,7 +1004,7 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.2.0',
+        'versao': '1.3.0',
         'data_compilacao': '09/03/2026',
         'total_usuarios': '10',
         'total_programas': '2',
@@ -1332,3 +1332,137 @@ def gerar_relatorio_beneficiarios(request):
             pessoas, beneficio_nome, status_label,
             total_pessoas, total_valor, total_ativos, total_espera, total_desligados
         )
+
+@login_required
+def relatorio_financeiro(request):
+    """Página de filtros do relatório financeiro"""
+    beneficios = Beneficio.objects.filter(ativo=True).order_by('nome')
+    
+    context = {
+        'beneficios_lista': beneficios,
+        'titulo': 'Relatório Financeiro',
+    }
+    return render(request, 'beneficios/relatorio_financeiro.html', context)
+
+
+@xframe_options_sameorigin
+@login_required
+def gerar_relatorio_financeiro(request):
+    """Gera relatório financeiro em PDF ou Excel"""
+    f_beneficio = request.GET.get('beneficio', '').strip()
+    f_status = request.GET.get('status', '').strip()
+    f_formato = request.GET.get('formato', 'pdf').strip()
+    
+    # Query base
+    pessoas_query = Pessoa.objects.select_related('beneficio')
+    
+    # Filtro benefício
+    if f_beneficio and f_beneficio.isdigit():
+        pessoas_query = pessoas_query.filter(beneficio_id=int(f_beneficio))
+        beneficios_filtro = Beneficio.objects.filter(id=int(f_beneficio))
+    else:
+        pessoas_query = pessoas_query.filter(beneficio__ativo=True)
+        beneficios_filtro = Beneficio.objects.filter(ativo=True)
+    
+    # Filtro status
+    if f_status and f_status != 'todos':
+        pessoas_query = pessoas_query.filter(status=f_status)
+        status_label = dict(Pessoa.STATUS_CHOICES).get(f_status, f_status)
+    else:
+        status_label = 'Todos'
+    
+    beneficio_label = 'Todos os Benefícios'
+    if f_beneficio and f_beneficio.isdigit():
+        beneficio_label = beneficios_filtro.values_list('nome', flat=True).first() or 'Todos'
+    
+    pessoas = list(pessoas_query)
+    
+    if not pessoas:
+        messages.error(request, 'Nenhuma pessoa encontrada com os filtros aplicados!')
+        return redirect('relatorio_financeiro')
+    
+    # Resumo geral
+    total_beneficios = beneficios_filtro.count()
+    total_ativos_geral = sum(1 for p in pessoas if p.status == 'ativo')
+    total_espera_geral = sum(1 for p in pessoas if p.status == 'em_espera')
+    total_desligados_geral = sum(1 for p in pessoas if p.status == 'desligado')
+    total_pessoas = len(pessoas)
+    total_valor = sum(p.valor_beneficio for p in pessoas)
+    
+    resumo_geral = {
+        'total_beneficios': total_beneficios,
+        'total_pessoas': total_pessoas,
+        'total_ativos': total_ativos_geral,
+        'total_valor': total_valor,
+    }
+    
+    # Detalhamento por benefício
+    det_beneficios = []
+    for b in beneficios_filtro.order_by('nome'):
+        pessoas_b = [p for p in pessoas if p.beneficio_id == b.id]
+        ativos = sum(1 for p in pessoas_b if p.status == 'ativo')
+        espera = sum(1 for p in pessoas_b if p.status == 'em_espera')
+        desligados = sum(1 for p in pessoas_b if p.status == 'desligado')
+        valor = sum(p.valor_beneficio for p in pessoas_b)
+        percentual = (float(valor) / float(total_valor) * 100) if total_valor > 0 else 0
+        
+        det_beneficios.append({
+            'descricao': b.nome_exibicao,
+            'nome_oficial': b.nome,
+            'ativos': ativos,
+            'espera': espera,
+            'desligados': desligados,
+            'valor': valor,
+            'percentual': percentual,
+        })
+    
+    # Detalhamento por faixa de valor (apenas ativos)
+    pessoas_ativas = pessoas
+    faixas_config = [
+        ('Até R$ 100', 0, 100),
+        ('R$ 101 - 150', 100, 150),
+        ('R$ 151 - 200', 150, 200),
+        ('R$ 201 - 250', 200, 250),
+        ('R$ 251 - 300', 250, 300),
+        ('Acima de R$ 300', 300, None),
+    ]
+    
+    det_faixas = []
+    for nome_faixa, vmin, vmax in faixas_config:
+        if vmax is None:
+            pessoas_faixa = [p for p in pessoas_ativas if p.valor_beneficio > vmin]
+        elif vmin == 0:
+            pessoas_faixa = [p for p in pessoas_ativas if p.valor_beneficio <= vmax]
+        else:
+            pessoas_faixa = [p for p in pessoas_ativas if vmin < p.valor_beneficio <= vmax]
+        
+        qtd = len(pessoas_faixa)
+        valor = sum(p.valor_beneficio for p in pessoas_faixa)
+        percentual = (float(valor) / float(total_valor) * 100) if total_valor > 0 else 0
+        
+        det_faixas.append({
+            'faixa': nome_faixa,
+            'pessoas': qtd,
+            'valor': valor,
+            'percentual': percentual,
+        })
+    
+    dados = {
+        'beneficio_label': beneficio_label,
+        'status_label': status_label,
+        'resumo_geral': resumo_geral,
+        'det_beneficios': det_beneficios,
+        'det_faixas': det_faixas,
+        'total_valor': total_valor,
+        'total_ativos': total_ativos_geral,
+        'total_espera': total_espera_geral,
+        'total_desligados': total_desligados_geral,
+        'total_pessoas': total_pessoas,
+    }
+    
+    if f_formato == 'xlsx':
+        from .utils import gerar_excel_financeiro
+        return gerar_excel_financeiro(dados)
+    else:
+        from .utils import gerar_pdf_financeiro
+        return gerar_pdf_financeiro(dados)

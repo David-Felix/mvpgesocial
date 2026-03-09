@@ -55,6 +55,8 @@ urlpatterns = [
     # Relatórios
     path('relatorios/beneficiarios/', views.relatorio_beneficiarios, name='relatorio_beneficiarios'),
     path('relatorios/beneficiarios/gerar/', views.gerar_relatorio_beneficiarios, name='gerar_relatorio_beneficiarios'),
+    path('relatorios/financeiro/', views.relatorio_financeiro, name='relatorio_financeiro'),
+    path('relatorios/financeiro/gerar/', views.gerar_relatorio_financeiro, name='gerar_relatorio_financeiro'),
 
     # Configurações Gerais
     path('configuracoes/', views.configuracoes_gerais, name='configuracoes_gerais'),

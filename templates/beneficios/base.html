@@ -70,7 +70,6 @@
                 <i class="bi bi-file-earmark-text"></i> Histórico de Memorandos
             </a>
             <!-- Submenu Relatórios -->
-            {% if user.is_superuser %}
             <a class="nav-link" data-bs-toggle="collapse" href="#submenuRelatorios" role="button" aria-expanded="false">
                 <i class="bi bi-clipboard-data"></i> Relatórios
             </a>
@@ -79,12 +78,11 @@
                     <a class="nav-link" href="{% url 'relatorio_beneficiarios' %}">
                         <i class="bi bi-people"></i> Relatório de Beneficiários
                     </a>
-                    <a class="nav-link" href="#">
+                    <a class="nav-link" href="{% url 'relatorio_financeiro' %}">
                         <i class="bi bi-currency-dollar"></i> Relatório Financeiro
                     </a>
                 </div>
             </div>
-            {% endif %}
             {% if user.is_staff %}
             <a class="nav-link" href="{% url 'usuarios_list' %}">
                 <i class="bi bi-people-fill"></i> Gerenciar Usuários

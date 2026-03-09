@@ -645,3 +645,338 @@ def gerar_excel_beneficiarios(pessoas, beneficio_nome, status_label,
     response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="relatorio_beneficiarios.xlsx"'
     return response
+
+def gerar_pdf_financeiro(dados):
+    """Gera PDF do relatório financeiro"""
+    from io import BytesIO
+    from datetime import datetime
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm, cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+    from django.http import HttpResponse
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                           leftMargin=15*mm, rightMargin=15*mm,
+                           topMargin=15*mm, bottomMargin=15*mm)
+    doc.title = 'Relatório Financeiro'
+    
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # Brasão
+    caminho_brasao = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static', 'images', 'brasao.jpg')
+    if os.path.exists(caminho_brasao):
+        img = Image(caminho_brasao, width=1.5*cm, height=1.5*cm)
+        img.hAlign = 'CENTER'
+        elements.append(img)
+        elements.append(Spacer(1, 2*mm))
+    
+    # Cabeçalho institucional
+    centro_style = ParagraphStyle('Centro', parent=styles['Normal'], fontSize=10, alignment=TA_CENTER, leading=14, fontName='Helvetica-Bold')
+    elements.append(Paragraph('ESTADO DA PARAÍBA', centro_style))
+    elements.append(Paragraph('PREFEITURA MUNICIPAL DE POCINHOS', centro_style))
+    elements.append(Paragraph('SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL', centro_style))
+    elements.append(Spacer(1, 5*mm))
+    
+    titulo_style = ParagraphStyle('Titulo', parent=styles['Normal'], fontSize=12, alignment=TA_CENTER, fontName='Helvetica-Bold', spaceAfter=3)
+    subtitulo_style = ParagraphStyle('Subtitulo', parent=styles['Normal'], fontSize=9, alignment=TA_CENTER, textColor=colors.grey, spaceAfter=8)
+    secao_style = ParagraphStyle('Secao', parent=styles['Normal'], fontSize=10, fontName='Helvetica-Bold', spaceAfter=5, spaceBefore=10, alignment=TA_CENTER)
+    resumo_style = ParagraphStyle('Resumo', parent=styles['Normal'], fontSize=9, leading=14)
+    
+    elements.append(Paragraph('RELATÓRIO FINANCEIRO', titulo_style))
+    elements.append(Paragraph(
+        f'Benefício: {dados["beneficio_label"]} | Status: {dados["status_label"]} | '
+        f'Gerado em: {datetime.now().strftime("%d/%m/%Y %H:%M")}',
+        subtitulo_style
+    ))
+    elements.append(Spacer(1, 5*mm))
+    
+    # ═══ RESUMO GERAL ═══
+    rg = dados['resumo_geral']
+    valor_fmt = f"{rg['total_valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    
+    elements.append(Paragraph('RESUMO GERAL', secao_style))
+    
+    resumo_data = [
+        ['Benefícios Ativos', str(rg['total_beneficios'])],
+        ['Pessoas Ativas', str(rg['total_ativos'])],
+        ['Valor Mensal Total', f'R$ {valor_fmt}'],
+    ]
+    
+    resumo_table = Table(resumo_data, colWidths=[150, 150])
+    resumo_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8f9fa')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(resumo_table)
+    elements.append(Spacer(1, 8*mm))
+    
+    # ═══ DETALHAMENTO POR BENEFÍCIO ═══
+    elements.append(Paragraph('DETALHAMENTO POR BENEFÍCIO', secao_style))
+    
+    ben_header = ['Descrição', 'Benefício', 'Ativos', 'Espera', 'Deslig.', 'Valor Mensal', '%']
+    ben_data = [ben_header]
+    
+    cell_style = ParagraphStyle('CellFin', fontSize=7, leading=9)
+    
+    for b in dados['det_beneficios']:
+        valor_b = f"{b['valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        ben_data.append([
+            Paragraph(b['descricao'], cell_style),
+            Paragraph(b['nome_oficial'], cell_style),
+            str(b['ativos']),
+            str(b['espera']),
+            str(b['desligados']),
+            f'R$ {valor_b}',
+            f"{b['percentual']:.1f}%",
+        ])
+    
+    # Linha total
+    total_valor_fmt = f"{dados['total_valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    ben_data.append([
+        Paragraph('<b>TOTAL</b>', cell_style),
+        '',
+        str(dados['total_ativos']),
+        str(dados['total_espera']),
+        str(dados['total_desligados']),
+        f'R$ {total_valor_fmt}',
+        '100%',
+    ])
+    
+    ben_widths = [120, 120, 40, 40, 40, 85, 35]
+    ben_table = Table(ben_data, colWidths=ben_widths, repeatRows=1)
+    ben_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4a7cff')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('ALIGN', (2, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (5, 0), (5, -1), 'RIGHT'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e9ecef')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(ben_table)
+    elements.append(Spacer(1, 8*mm))
+    
+    # ═══ DETALHAMENTO POR FAIXA DE VALOR ═══
+    elements.append(Paragraph('DETALHAMENTO POR FAIXA DE VALOR', secao_style))
+    
+    faixa_header = ['Faixa', 'Pessoas', 'Valor Total', '%']
+    faixa_data = [faixa_header]
+    
+    for f in dados['det_faixas']:
+        valor_f = f"{f['valor']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        faixa_data.append([
+            f['faixa'],
+            str(f['pessoas']),
+            f'R$ {valor_f}',
+            f"{f['percentual']:.1f}%",
+        ])
+    
+    # Total faixas
+    total_faixa_pessoas = sum(f['pessoas'] for f in dados['det_faixas'])
+    faixa_data.append([
+        'TOTAL',
+        str(total_faixa_pessoas),
+        f'R$ {total_valor_fmt}',
+        '100%',
+    ])
+    
+    faixa_widths = [120, 60, 100, 50]
+    faixa_table = Table(faixa_data, colWidths=faixa_widths, repeatRows=1)
+    faixa_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4a7cff')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e9ecef')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(faixa_table)
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="relatorio_financeiro.pdf"'
+    return response
+
+
+def gerar_excel_financeiro(dados):
+    """Gera Excel do relatório financeiro"""
+    from io import BytesIO
+    from datetime import datetime
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Financeiro'
+    
+    header_font = Font(bold=True, color='FFFFFF', size=10)
+    header_fill = PatternFill(start_color='4A7CFF', end_color='4A7CFF', fill_type='solid')
+    header_align = Alignment(horizontal='center', vertical='center')
+    border = Border(
+        left=Side(style='thin', color='DEE2E6'),
+        right=Side(style='thin', color='DEE2E6'),
+        top=Side(style='thin', color='DEE2E6'),
+        bottom=Side(style='thin', color='DEE2E6'),
+    )
+    total_fill = PatternFill(start_color='E9ECEF', end_color='E9ECEF', fill_type='solid')
+    total_font = Font(bold=True, size=10)
+    secao_font = Font(bold=True, size=11)
+    
+    # Título
+    ws.merge_cells('A1:G1')
+    ws['A1'] = 'Relatório Financeiro'
+    ws['A1'].font = Font(bold=True, size=14)
+    
+    ws.merge_cells('A2:G2')
+    ws['A2'] = f'Benefício: {dados["beneficio_label"]} | Status: {dados["status_label"]} | Gerado em: {datetime.now().strftime("%d/%m/%Y %H:%M")}'
+    ws['A2'].font = Font(size=9, color='808080')
+    
+    # ═══ RESUMO GERAL ═══
+    row = 4
+    ws.cell(row=row, column=1, value='RESUMO GERAL').font = secao_font
+    row = 5
+    
+    rg = dados['resumo_geral']
+    valor_total = float(rg['total_valor'])
+    
+    resumo_items = [
+        ('Benefícios Ativos', rg['total_beneficios']),
+        ('Pessoas Ativas', rg['total_ativos']),
+        ('Valor Mensal Total', valor_total),
+    ]
+    
+    for label, valor in resumo_items:
+        ws.cell(row=row, column=1, value=label).font = Font(bold=True)
+        ws.cell(row=row, column=1).border = border
+        cell = ws.cell(row=row, column=2, value=valor)
+        cell.border = border
+        if isinstance(valor, float):
+            cell.number_format = 'R$ #,##0.00'
+        row += 1
+    
+    # ═══ DETALHAMENTO POR BENEFÍCIO ═══
+    row += 1
+    ws.cell(row=row, column=1, value='DETALHAMENTO POR BENEFÍCIO').font = secao_font
+    row += 1
+    
+    ben_headers = ['Descrição', 'Nome Oficial', 'Ativos', 'Espera', 'Deslig.', 'Valor Mensal', '%']
+    for col, h in enumerate(ben_headers, 1):
+        cell = ws.cell(row=row, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = border
+    row += 1
+    
+    for idx, b in enumerate(dados['det_beneficios']):
+        ws.cell(row=row, column=1, value=b['descricao']).border = border
+        ws.cell(row=row, column=2, value=b['nome_oficial']).border = border
+        ws.cell(row=row, column=3, value=b['ativos']).border = border
+        ws.cell(row=row, column=4, value=b['espera']).border = border
+        ws.cell(row=row, column=5, value=b['desligados']).border = border
+        cell_v = ws.cell(row=row, column=6, value=float(b['valor']))
+        cell_v.number_format = '#,##0.00'
+        cell_v.border = border
+        ws.cell(row=row, column=7, value=f"{b['percentual']:.1f}%").border = border
+        
+        if idx % 2 == 1:
+            for c in range(1, 8):
+                ws.cell(row=row, column=c).fill = PatternFill(start_color='F8F9FA', end_color='F8F9FA', fill_type='solid')
+        row += 1
+    
+    # Total benefícios
+    ws.cell(row=row, column=1, value='TOTAL').font = total_font
+    ws.cell(row=row, column=3, value=dados['total_ativos']).font = total_font
+    ws.cell(row=row, column=4, value=dados['total_espera']).font = total_font
+    ws.cell(row=row, column=5, value=dados['total_desligados']).font = total_font
+    cell_tv = ws.cell(row=row, column=6, value=float(dados['total_valor']))
+    cell_tv.number_format = '#,##0.00'
+    cell_tv.font = total_font
+    ws.cell(row=row, column=7, value='100%').font = total_font
+    for c in range(1, 8):
+        ws.cell(row=row, column=c).fill = total_fill
+        ws.cell(row=row, column=c).border = border
+    
+    # ═══ DETALHAMENTO POR FAIXA DE VALOR ═══
+    row += 2
+    ws.cell(row=row, column=1, value='DETALHAMENTO POR FAIXA DE VALOR').font = secao_font
+    row += 1
+    
+    faixa_headers = ['Faixa', 'Pessoas', 'Valor Total', '%']
+    for col, h in enumerate(faixa_headers, 1):
+        cell = ws.cell(row=row, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = border
+    row += 1
+    
+    for idx, f in enumerate(dados['det_faixas']):
+        ws.cell(row=row, column=1, value=f['faixa']).border = border
+        ws.cell(row=row, column=2, value=f['pessoas']).border = border
+        cell_fv = ws.cell(row=row, column=3, value=float(f['valor']))
+        cell_fv.number_format = '#,##0.00'
+        cell_fv.border = border
+        ws.cell(row=row, column=4, value=f"{f['percentual']:.1f}%").border = border
+        
+        if idx % 2 == 1:
+            for c in range(1, 5):
+                ws.cell(row=row, column=c).fill = PatternFill(start_color='F8F9FA', end_color='F8F9FA', fill_type='solid')
+        row += 1
+    
+    # Total faixas
+    total_faixa_pessoas = sum(f['pessoas'] for f in dados['det_faixas'])
+    ws.cell(row=row, column=1, value='TOTAL').font = total_font
+    ws.cell(row=row, column=2, value=total_faixa_pessoas).font = total_font
+    cell_tfv = ws.cell(row=row, column=3, value=float(dados['total_valor']))
+    cell_tfv.number_format = '#,##0.00'
+    cell_tfv.font = total_font
+    ws.cell(row=row, column=4, value='100%').font = total_font
+    for c in range(1, 5):
+        ws.cell(row=row, column=c).fill = total_fill
+        ws.cell(row=row, column=c).border = border
+    
+    # Larguras
+    ws.column_dimensions['A'].width = 25
+    ws.column_dimensions['B'].width = 25
+    ws.column_dimensions['C'].width = 12
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 16
+    ws.column_dimensions['G'].width = 8
+    
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="relatorio_financeiro.xlsx"'
+    return response

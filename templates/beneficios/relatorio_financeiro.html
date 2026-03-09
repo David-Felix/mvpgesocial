@@ -1,19 +1,19 @@
 {% extends 'beneficios/base.html' %}
 {% load static %}
-{% block title %}Relatório de Beneficiários - Sistema de Benefícios{% endblock %}
+{% block title %}Relatório Financeiro - Sistema de Benefícios{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 {% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-6">
             <div class="card form-panel">
                 <div class="card-header">
-                    <i class="bi bi-people"></i> Relatório de Beneficiários
+                    <i class="bi bi-currency-dollar"></i> Relatório Financeiro
                 </div>
                 <div class="card-body">
-                    <form id="formRelatorio" method="get" action="{% url 'gerar_relatorio_beneficiarios' %}">
+                    <form id="formRelatorio" method="get" action="{% url 'gerar_relatorio_financeiro' %}">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Benefício</label>
@@ -28,53 +28,10 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Status</label>
                                 <select name="status" class="form-control">
-                                    <option value="todos">Todos</option>
                                     <option value="ativo">Ativos</option>
                                     <option value="desligado">Desligados</option>
-                                    <option value="em_espera">Em Espera</option>
+                                    <option value="todos">Todos</option>  
                                 </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Valor (R$)</label>
-                                <input type="text" name="valor" class="form-control">
-                                <div class="form-text">
-                                    <i class="bi bi-info-circle text-info"></i> Deixe vazio para todos os valores
-                                </div>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Bairro</label>
-                                <select name="bairro" class="form-control">
-                                    <option value="">Todos</option>
-                                    {% for bairro in bairros %}
-                                    <option value="{{ bairro }}">{{ bairro }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Sexo</label>
-                                <select name="sexo" class="form-control">
-                                    <option value="todos">Todos</option>
-                                    <option value="M">Masculino</option>
-                                    <option value="F">Feminino</option>
-                                    <option value="O">Outro</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Cadastrado a partir de</label>
-                                <input type="date" name="data_de" class="form-control">
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Cadastrado até</label>
-                                <input type="date" name="data_ate" class="form-control">
                             </div>
                         </div>
 
@@ -105,7 +62,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-file-earmark-pdf"></i> Relatório de Beneficiários</h5>
+                <h5 class="modal-title"><i class="bi bi-file-earmark-pdf"></i> Relatório Financeiro</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
@@ -126,15 +83,13 @@ function abrirPDFModal() {
     var form = document.getElementById('formRelatorio');
     var params = new URLSearchParams(new FormData(form));
     params.set('formato', 'pdf');
-    var url = '{% url "gerar_relatorio_beneficiarios" %}?' + params.toString();
+    var url = '{% url "gerar_relatorio_financeiro" %}?' + params.toString();
     
     fetch(url, { redirect: 'manual' }).then(response => {
         if (response.type === 'opaqueredirect') {
-            // Erro - recarrega para mostrar mensagem
             window.scrollTo(0, 0);
             window.location.href = window.location.pathname;
         } else if (response.headers.get('Content-Type')?.includes('application/pdf')) {
-            // PDF gerado - abre no modal
             document.getElementById('pdfViewer').src = url;
             document.getElementById('pdfDownload').href = url;
             var modal = new bootstrap.Modal(document.getElementById('modalPDF'));
