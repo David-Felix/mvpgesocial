@@ -5,12 +5,12 @@ bind = "127.0.0.1:8000"
 
 # Workers (2-4 x CPU cores)
 #workers = multiprocessing.cpu_count() * 2 + 1
-workers = 12
+workers = 5
 
 worker_class = "sync"
 
 # Timeouts
-timeout = 120
+timeout = 300
 keepalive = 5
 
 # Logs

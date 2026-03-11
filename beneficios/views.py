@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage
 from .models import Pessoa, Beneficio, Documento, Memorando, MemorandoPessoa
 from .services import registrar_memorando
+from .utils import registrar_log_acao
 from .forms import PessoaForm, DocumentoForm
 from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
@@ -207,7 +208,7 @@ def pessoa_ativar(request, pk):
         data=timezone.now(),
         usuario=request.user
     )
-    
+    registrar_log_acao(request, 'status_ativar', f'{pessoa.nome_completo} - {status_anterior} → ativo')
     messages.success(request, f'{pessoa.nome_completo} ativada com sucesso!')
     return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
 
@@ -234,7 +235,7 @@ def pessoa_espera(request, pk):
         data=timezone.now(),
         usuario=request.user
     )
-    
+    registrar_log_acao(request, 'status_espera', f'{pessoa.nome_completo} - {status_anterior} → em_espera')
     messages.success(request, f'{pessoa.nome_completo} movida para lista de espera!')
     return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
 
@@ -261,7 +262,7 @@ def pessoa_desligar(request, pk):
         data=timezone.now(),
         usuario=request.user
     )
-    
+    registrar_log_acao(request, 'status_desligar', f'{pessoa.nome_completo} - {status_anterior} → desligado')
     messages.success(request, f'{pessoa.nome_completo} desligada com sucesso!')
     return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
 
@@ -627,7 +628,7 @@ def usuario_toggle_active(request, pk):
     status = 'ativado' if usuario.is_active else 'desativado'
     messages.success(request, f'Usuário {usuario.username} {status}!')
     return redirect('usuarios_list')
-# views.py - adicionar novas views
+
 
 @login_required
 def gerar_recibo(request, pk):
@@ -643,6 +644,7 @@ def gerar_recibo(request, pk):
         pdf_buffer = gerar_recibo_paginas_separadas(pessoa)
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="recibo_{pessoa.cpf}.pdf"'
+        #registrar_log_acao(request, 'recibo_individual', f'Recibo - {pessoa.nome_completo}')
         return response
     except Exception as e:
         messages.error(request, f'Erro ao gerar recibo: {str(e)}')
@@ -691,7 +693,9 @@ def gerar_memorando(request, pk):
         pdf_buffer = gerar_memorando_segunda_via_pdf(memorando)
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="memorando_{memorando.numero.replace("/", "-")}.pdf"'
+        #registrar_log_acao(request, 'memorando_individual', f'Memorando {memorando.numero} - {pessoa.nome_completo}')
         return response
+        
     except Exception as e:
         messages.error(request, f'Erro ao gerar memorando: {str(e)}')
         return redirect('pessoas_por_beneficio', beneficio_id=pessoa.beneficio.id)
@@ -783,6 +787,7 @@ def gerar_memorando_massa(request, beneficio_id):
         pdf_buffer = gerar_memorando_segunda_via_pdf(memorando)
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="memorando_{memorando.numero.replace("/", "-")}.pdf"'
+        #registrar_log_acao(request, 'memorando_massa', f'Memorando {memorando.numero} - {beneficio.nome} - {len(pessoas)} pessoas')
         return response
     except Exception as e:
         messages.error(request, f'Erro ao gerar memorando em massa: {str(e)}')
@@ -859,6 +864,7 @@ def gerar_recibos_massa(request, beneficio_id):
         pdf_buffer = gerar_recibos_massa_pdf(pessoas)
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="recibos_massa_{beneficio.nome}.pdf"'
+        #registrar_log_acao(request, 'recibos_massa', f'Recibos em massa - {beneficio.nome} - {len(pessoas)} pessoas')
         return response
     except Exception as e:
         messages.error(request, f'Erro ao gerar recibos em massa: {str(e)}')
@@ -992,6 +998,7 @@ def gerar_documentos_massa(request, beneficio_id):
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="documentos_massa_{beneficio.id}.pdf"'
         response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        registrar_log_acao(request, 'documentos_massa', f'Documentos em massa - {beneficio.nome} - {len(pessoas)} pessoas')
         return response
     except Exception as e:
         messages.error(request, f'Erro ao gerar documentos: {str(e)}')
@@ -1004,8 +1011,8 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.3.0',
-        'data_compilacao': '09/03/2026',
+        'versao': '1.4.2',
+        'data_compilacao': '10/03/2026',
         'total_usuarios': '10',
         'total_programas': '2',
     }
@@ -1225,6 +1232,7 @@ def gerar_remessa_banco(request, beneficio_id):
         content_type='text/csv; charset=utf-8'
     )
     response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+    registrar_log_acao(request, 'remessa_banco', f'Remessa - {beneficio.nome} - {len(pessoas)} pessoas - R$ {sum(p.valor_beneficio for p in pessoas):.2f}')
     return response
 
 @login_required
@@ -1322,12 +1330,14 @@ def gerar_relatorio_beneficiarios(request):
     
     if f_formato == 'xlsx':
         from .utils import gerar_excel_beneficiarios
+        #registrar_log_acao(request, 'relatorio_beneficiarios_xlsx', f'Relatório Beneficiários Excel - {beneficio_nome} - {total_pessoas} pessoas')
         return gerar_excel_beneficiarios(
             pessoas, beneficio_nome, status_label,
             total_pessoas, total_valor, total_ativos, total_espera, total_desligados
         )
     else:
         from .utils import gerar_pdf_beneficiarios
+        #registrar_log_acao(request, 'relatorio_beneficiarios_pdf', f'Relatório Beneficiários PDF - {beneficio_nome} - {total_pessoas} pessoas')
         return gerar_pdf_beneficiarios(
             pessoas, beneficio_nome, status_label,
             total_pessoas, total_valor, total_ativos, total_espera, total_desligados
@@ -1462,7 +1472,158 @@ def gerar_relatorio_financeiro(request):
     
     if f_formato == 'xlsx':
         from .utils import gerar_excel_financeiro
+        #registrar_log_acao(request, 'relatorio_financeiro_xlsx', f'Relatório Financeiro Excel - {beneficio_label} - {total_pessoas} pessoas')
         return gerar_excel_financeiro(dados)
     else:
         from .utils import gerar_pdf_financeiro
+        #registrar_log_acao(request, 'relatorio_financeiro_pdf', f'Relatório Financeiro PDF - {beneficio_label} - {total_pessoas} pessoas')
         return gerar_pdf_financeiro(dados)
+
+@login_required
+def auditoria(request):
+    """Tela de auditoria geral do sistema"""
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
+        return redirect('dashboard')
+    
+    from auditlog.models import LogEntry
+    from django.contrib.auth import get_user_model
+    from datetime import datetime
+    User = get_user_model()
+    
+    # Filtros
+    f_data_de = request.GET.get('data_de', '').strip()
+    f_data_ate = request.GET.get('data_ate', '').strip()
+    f_usuario = request.GET.get('usuario', '').strip()
+    f_tipo = request.GET.get('tipo', '').strip()
+    f_entidade = request.GET.get('entidade', '').strip()
+    
+    # ═══ AUDITLOG (alterações em models) ═══
+    audit_query = LogEntry.objects.select_related('actor', 'content_type').order_by('-timestamp')
+    
+    if f_data_de:
+        try:
+            audit_query = audit_query.filter(timestamp__date__gte=datetime.strptime(f_data_de, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    
+    if f_data_ate:
+        try:
+            audit_query = audit_query.filter(timestamp__date__lte=datetime.strptime(f_data_ate, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    
+    if f_usuario and f_usuario.isdigit():
+        audit_query = audit_query.filter(actor_id=int(f_usuario))
+    
+    if f_entidade and f_entidade == 'models':
+        pass  # mostra tudo do auditlog
+    elif f_entidade and f_entidade == 'acoes':
+        audit_query = LogEntry.objects.none()
+    elif f_entidade and f_entidade != '':
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.filter(model=f_entidade.lower()).first()
+        if ct:
+            audit_query = audit_query.filter(content_type=ct)
+    
+    if f_tipo:
+        action_map = {'criacao': 0, 'edicao': 1, 'exclusao': 2}
+        if f_tipo in action_map:
+            audit_query = audit_query.filter(action=action_map[f_tipo])
+    
+    # ═══ LOG AÇÕES (geração de documentos) ═══
+    from .models import LogAcao
+    acoes_query = LogAcao.objects.select_related('usuario').order_by('-created_at')
+    
+    if f_data_de:
+        try:
+            acoes_query = acoes_query.filter(created_at__date__gte=datetime.strptime(f_data_de, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    
+    if f_data_ate:
+        try:
+            acoes_query = acoes_query.filter(created_at__date__lte=datetime.strptime(f_data_ate, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    
+    if f_usuario and f_usuario.isdigit():
+        acoes_query = acoes_query.filter(usuario_id=int(f_usuario))
+    
+    if f_entidade and f_entidade == 'acoes':
+        pass  # mostra tudo das ações
+    elif f_entidade and f_entidade == 'models':
+        acoes_query = LogAcao.objects.none()
+    elif f_entidade and f_entidade not in ('', 'models', 'acoes'):
+        acoes_query = LogAcao.objects.none()
+    
+    if f_tipo == 'geracao':
+        audit_query = LogEntry.objects.none()
+    elif f_tipo in ('criacao', 'edicao', 'exclusao'):
+        acoes_query = LogAcao.objects.none()
+    
+    # Combinar e ordenar
+    registros = []
+    
+    action_labels = {0: 'Criação', 1: 'Edição', 2: 'Exclusão'}
+    model_labels = {
+        'pessoa': 'Pessoa',
+        'beneficio': 'Benefício',
+        'user': 'Usuário',
+        'documento': 'Documento',
+        'configuracaogeral': 'Configuração Geral',
+    }
+    
+    for log in audit_query[:200]:
+        changes = log.changes_dict if hasattr(log, 'changes_dict') else {}
+        detalhes = []
+        for campo, valores in changes.items():
+            detalhes.append(f'{campo}: {valores[0]} → {valores[1]}')
+        
+        registros.append({
+            'data': log.timestamp,
+            'usuario': log.actor.username if log.actor else 'Sistema',
+            'tipo': action_labels.get(log.action, 'Outro'),
+            'tipo_classe': 'success' if log.action == 0 else 'warning' if log.action == 1 else 'danger',
+            'entidade': model_labels.get(log.content_type.model, log.content_type.model) if log.content_type else '-',
+            'objeto': str(log.object_repr),
+            'detalhes': ' | '.join(detalhes) if detalhes else '-',
+            'ip': log.remote_addr or '-',
+        })
+    
+    for acao in acoes_query[:200]:
+        registros.append({
+            'data': acao.created_at,
+            'usuario': acao.usuario.username if acao.usuario else 'Sistema',
+            'tipo': acao.get_tipo_display(),
+            'tipo_classe': 'info',
+            'entidade': 'Ação',
+            'objeto': '-',
+            'detalhes': acao.descricao,
+            'ip': acao.ip or '-',
+        })
+    
+    # Ordenar por data decrescente
+    registros.sort(key=lambda x: x['data'], reverse=True)
+    registros = registros[:300]
+    
+    # Paginação
+    paginator = Paginator(registros, 30)
+    page_number = request.GET.get('page', 1)
+    registros_page = paginator.get_page(page_number)
+    
+    # Dados para filtros
+    usuarios = User.objects.order_by('username')
+    
+    context = {
+        'registros': registros_page,
+        'usuarios': usuarios,
+        'filtros': {
+            'data_de': f_data_de,
+            'data_ate': f_data_ate,
+            'usuario': f_usuario,
+            'tipo': f_tipo,
+            'entidade': f_entidade,
+        }
+    }
+    return render(request, 'beneficios/auditoria.html', context)

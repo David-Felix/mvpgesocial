@@ -1,0 +1,170 @@
+{% extends 'beneficios/base.html' %}
+{% load static %}
+{% block title %}Auditoria - Sistema de Benefícios{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4" style="font-size: 1.25rem;">
+        <i class="bi bi-shield-check"></i> Auditoria Geral
+    </h2>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+        </div>
+        <div class="card-body filtros-compactos">
+            <form method="get">
+                <div class="row g-2 align-items-end">
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label small">Data De</label>
+                        <input type="date" name="data_de" class="form-control" value="{{ filtros.data_de }}">
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label small">Data Até</label>
+                        <input type="date" name="data_ate" class="form-control" value="{{ filtros.data_ate }}">
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label small">Usuário</label>
+                        <select name="usuario" class="form-control">
+                            <option value="">Todos</option>
+                            {% for u in usuarios %}
+                            <option value="{{ u.id }}" {% if filtros.usuario == u.id|stringformat:"d" %}selected{% endif %}>{{ u.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label small">Tipo de Ação</label>
+                        <select name="tipo" class="form-control">
+                            <option value="">Todos</option>
+                            <option value="criacao" {% if filtros.tipo == 'criacao' %}selected{% endif %}>Criação</option>
+                            <option value="edicao" {% if filtros.tipo == 'edicao' %}selected{% endif %}>Edição</option>
+                            <option value="exclusao" {% if filtros.tipo == 'exclusao' %}selected{% endif %}>Exclusão</option>
+                            <option value="geracao" {% if filtros.tipo == 'geracao' %}selected{% endif %}>Geração de Documento</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label small">Entidade</label>
+                        <select name="entidade" class="form-control">
+                            <option value="">Todas</option>
+                            <option value="pessoa" {% if filtros.entidade == 'pessoa' %}selected{% endif %}>Pessoa</option>
+                            <option value="beneficio" {% if filtros.entidade == 'beneficio' %}selected{% endif %}>Benefício</option>
+                            <option value="user" {% if filtros.entidade == 'user' %}selected{% endif %}>Usuário</option>
+                            <option value="documento" {% if filtros.entidade == 'documento' %}selected{% endif %}>Documento</option>
+                            <option value="configuracaogeral" {% if filtros.entidade == 'configuracaogeral' %}selected{% endif %}>Configuração</option>
+                            <option value="acoes" {% if filtros.entidade == 'acoes' %}selected{% endif %}>Ações em Massa</option>
+                            <option value="models" {% if filtros.entidade == 'models' %}selected{% endif %}>Alterações em Dados</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-info btn-sm">
+                                <i class="bi bi-search"></i> Filtrar
+                            </button>
+                            <a href="{% url 'auditoria' %}" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-x-circle"></i> Limpar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card">
+        <div class="card-body">
+            {% if registros %}
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Usuário</th>
+                            <th>Tipo</th>
+                            <th>Entidade</th>
+                            <th>Objeto</th>
+                            <th>Detalhes</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in registros %}
+                        <tr>
+                            <td class="text-nowrap small">{{ r.data|date:"d/m/Y H:i" }}</td>
+                            <td class="small">{{ r.usuario }}</td>
+                            <td><span class="badge bg-{{ r.tipo_classe }}">{{ r.tipo }}</span></td>
+                            <td class="small">{{ r.entidade }}</td>
+                            <td class="small">{{ r.objeto|truncatechars:40 }}</td>
+                            <td class="small">
+                                {% if r.detalhes != '-' %}
+                                <a href="javascript:void(0)" 
+                                   data-bs-toggle="popover" 
+                                   data-bs-trigger="click"
+                                   data-bs-html="true"
+                                   data-bs-title="Detalhes da Alteração"
+                                   data-bs-content="{{ r.detalhes }}"
+                                   class="text-decoration-none">
+                                    {{ r.detalhes|truncatechars:50 }} <i class="bi bi-eye text-info"></i>
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ r.ip }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if registros.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center mt-3">
+                    {% if registros.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ registros.previous_page_number }}&data_de={{ filtros.data_de }}&data_ate={{ filtros.data_ate }}&usuario={{ filtros.usuario }}&tipo={{ filtros.tipo }}&entidade={{ filtros.entidade }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Página {{ registros.number }} de {{ registros.paginator.num_pages }}</span>
+                    </li>
+                    {% if registros.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ registros.next_page_number }}&data_de={{ filtros.data_de }}&data_ate={{ filtros.data_ate }}&usuario={{ filtros.usuario }}&tipo={{ filtros.tipo }}&entidade={{ filtros.entidade }}">Próxima</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">Nenhum registro encontrado.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var popovers = document.querySelectorAll('[data-bs-toggle="popover"]');
+    popovers.forEach(function(el) {
+        new bootstrap.Popover(el, { container: 'body', placement: 'left' });
+    });
+    
+    // Fechar popover ao clicar fora
+    document.addEventListener('click', function(e) {
+        popovers.forEach(function(el) {
+            if (!el.contains(e.target)) {
+                bootstrap.Popover.getInstance(el)?.hide();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

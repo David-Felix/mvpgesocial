@@ -980,3 +980,18 @@ def gerar_excel_financeiro(dados):
     response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="relatorio_financeiro.xlsx"'
     return response
+
+def registrar_log_acao(request, tipo, descricao):
+    """Registra uma ação no log de auditoria"""
+    from .models import LogAcao
+    
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+    if not ip:
+        ip = request.META.get('REMOTE_ADDR')
+    
+    LogAcao.objects.create(
+        usuario=request.user,
+        tipo=tipo,
+        descricao=descricao,
+        ip=ip,
+    )

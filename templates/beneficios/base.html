@@ -64,6 +64,11 @@
             <a class="nav-link" href="{% url 'memorandos_lista' %}">
                 <i class="bi bi-file-earmark-text"></i> Histórico de Memorandos
             </a>
+            {% if user.is_staff %}
+            <a class="nav-link" href="{% url 'auditoria' %}">
+                <i class="bi bi-shield-check"></i> Auditoria
+            </a>
+            {% endif %}
             <!-- Submenu Relatórios -->
             <a class="nav-link" data-bs-toggle="collapse" href="#submenuRelatorios" role="button" aria-expanded="false">
                 <i class="bi bi-clipboard-data"></i> Relatórios

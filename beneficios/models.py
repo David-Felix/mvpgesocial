@@ -1,10 +1,13 @@
 from django.db import models
+from auditlog.registry import auditlog
+from auditlog.models import AuditlogHistoryField
 from django.contrib.auth.models import AbstractUser
 from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
 
 class User(AbstractUser):
     """Usuário customizado para futuras expansões"""
     must_change_password = models.BooleanField(default=True, verbose_name='Deve trocar senha')
+    history = AuditlogHistoryField()
 
 class Beneficio(models.Model):
     """Tipos de benefícios: Auxílio Transporte e Renda Solidária"""
@@ -24,6 +27,7 @@ class Beneficio(models.Model):
     ativo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    history = AuditlogHistoryField()
     
     class Meta:
         verbose_name = 'Benefício'
@@ -69,6 +73,7 @@ class Pessoa(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    history = AuditlogHistoryField()
     
     class Meta:
         verbose_name = 'Pessoa'
@@ -90,6 +95,7 @@ class Documento(models.Model):
     pessoa = models.OneToOneField(Pessoa, on_delete=models.CASCADE, related_name='documento')
     arquivo = models.FileField(upload_to='documentos/%Y/%m/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    history = AuditlogHistoryField()
     
     class Meta:
         verbose_name = 'Documento'
@@ -128,6 +134,7 @@ class Memorando(models.Model):
     email_institucional = models.EmailField(blank=True)
     endereco = models.CharField(max_length=200, blank=True)
     cep = models.CharField(max_length=10, blank=True)
+    history = AuditlogHistoryField()
     
     class Meta:
         verbose_name = 'Memorando'
@@ -149,7 +156,8 @@ class MemorandoPessoa(models.Model):
     nome_completo = models.CharField(max_length=200)
     valor_beneficio = models.DecimalField(max_digits=10, decimal_places=2)
     ordem = models.PositiveIntegerField()
-    
+    history = AuditlogHistoryField()
+
     class Meta:
         verbose_name = 'Pessoa do Memorando'
         verbose_name_plural = 'Pessoas do Memorando'
@@ -200,6 +208,7 @@ class ConfiguracaoGeral(models.Model):
         default='58150-000',
         verbose_name='CEP'
     )
+    history = AuditlogHistoryField()
     
     class Meta:
         verbose_name = 'Configuração Geral'
@@ -234,3 +243,45 @@ class HistoricoStatus(models.Model):
     
     def __str__(self):
         return f"{self.pessoa.nome_completo}: {self.status_anterior} → {self.status_novo} em {self.data}"
+
+class LogAcao(models.Model):
+    """Log de ações de geração de documentos e operações em massa"""
+    TIPO_CHOICES = [
+        ('memorando_individual', 'Memorando Individual'),
+        ('memorando_massa', 'Memorando em Massa'),
+        ('recibo_individual', 'Recibo Individual'),
+        ('recibos_massa', 'Recibos em Massa'),
+        ('documentos_massa', 'Documentos em Massa'),
+        ('remessa_banco', 'Arquivo Remessa'),
+        ('relatorio_beneficiarios_pdf', 'Relatório Beneficiários PDF'),
+        ('relatorio_beneficiarios_xlsx', 'Relatório Beneficiários Excel'),
+        ('relatorio_financeiro_pdf', 'Relatório Financeiro PDF'),
+        ('relatorio_financeiro_xlsx', 'Relatório Financeiro Excel'),
+        ('status_ativar', 'Ativou Pessoa'),
+        ('status_espera', 'Moveu para Espera'),
+        ('status_desligar', 'Desligou Pessoa'),
+    ]
+    
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
+    descricao = models.TextField()
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Log de Ação'
+        verbose_name_plural = 'Logs de Ações'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.usuario} - {self.get_tipo_display()} - {self.created_at}"
+
+
+# Registrar models no auditlog
+auditlog.register(User)
+auditlog.register(Beneficio)
+auditlog.register(Pessoa)
+auditlog.register(Documento)
+auditlog.register(ConfiguracaoGeral)
+auditlog.register(Memorando)
+auditlog.register(ConfiguracaoGeral)

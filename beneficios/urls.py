@@ -61,6 +61,9 @@ urlpatterns = [
     # Configurações Gerais
     path('configuracoes/', views.configuracoes_gerais, name='configuracoes_gerais'),
 
+    # Auditoria
+    path('auditoria/', views.auditoria, name='auditoria'),
+
     # Senha
     path('trocar-senha/', views.trocar_senha, name='trocar_senha'),
 
