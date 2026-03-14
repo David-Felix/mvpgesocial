@@ -24,17 +24,22 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-5 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Nome do Remote</label>
                                 <div class="input-group">
                                     <input type="text" name="rclone_nome_remote" class="form-control"
                                            value="{{ config.rclone_nome_remote }}" placeholder="Ex: DRIVE">
                                 </div>
                             </div>
-                            <div class="col-md-5 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Pasta de Destino</label>
                                 <input type="text" name="rclone_pasta" class="form-control"
                                        value="{{ config.rclone_pasta }}" placeholder="Ex: BackupGESOCIAL">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">E-mail Google</label>
+                                <input type="email" name="email_conta" class="form-control"
+                                       value="{{ config.email_conta }}" placeholder="exemplo@gmail.com">
                             </div>
                             <div class="col-md-2 mb-3 d-flex align-items-end">
                                 <button type="submit" form="form_testar" class="btn btn-outline-info btn-sm w-100">
@@ -131,18 +136,12 @@
 
                 <div class="alert alert-info small">
                     <i class="bi bi-info-circle"></i>
-                    Os agendamentos devem ter pelo menos <strong>30 minutos</strong> de diferença entre si.
+                    Os agendamentos devem ter pelo menos <strong>30 minutos</strong> de diferença.
                 </div>
 
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-check-circle"></i> Salvar Configurações
                 </button>
-            </form>
-
-            <!-- Form separado para testar (não envia dados do form principal) -->
-            <form id="form_testar" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="acao" value="testar_rclone">
             </form>
         </div>
 

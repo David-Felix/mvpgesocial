@@ -7,6 +7,8 @@ from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
 class User(AbstractUser):
     """Usuário customizado para futuras expansões"""
     must_change_password = models.BooleanField(default=True, verbose_name='Deve trocar senha')
+    nome_completo = models.CharField(max_length=150, blank=True, default='', verbose_name='Nome Completo')
+    cargo = models.CharField(max_length=100, blank=True, default='', verbose_name='Cargo')
     history = AuditlogHistoryField()
 
 class Beneficio(models.Model):
@@ -287,6 +289,7 @@ class BackupConfig(models.Model):
     # Google Drive
     rclone_nome_remote = models.CharField(max_length=100, default='DRIVE', verbose_name='Nome do remote')
     rclone_pasta = models.CharField(max_length=200, default='BackupGESOCIAL', verbose_name='Pasta de destino')
+    email_conta = models.EmailField(blank=True, default='',verbose_name='E-mail da conta Google')
     
     # Backup Banco de Dados
     agendamento_db_ativo = models.BooleanField(default=False, verbose_name='Agendar backup do banco')
@@ -415,4 +418,3 @@ auditlog.register(Pessoa)
 auditlog.register(Documento)
 auditlog.register(ConfiguracaoGeral)
 auditlog.register(Memorando)
-auditlog.register(ConfiguracaoGeral)

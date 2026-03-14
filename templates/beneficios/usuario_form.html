@@ -1,6 +1,6 @@
 {% extends 'beneficios/base.html' %}
 {% load static %}
-{% block title %}{{ titulo }} - Sistema de Benefícios{% endblock %}
+{% block title %}{{ titulo }} - GeSocial{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 {% endblock %}
@@ -10,58 +10,103 @@
         <div class="col-lg-6">
             <div class="card form-panel">
                 <div class="card-header">
-                    <i class="bi bi-person-plus"></i> {{ titulo }}
+                    <i class="bi bi-{% if editando %}pencil-square{% else %}person-plus{% endif %}"></i> {{ titulo }}
                 </div>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
-            			<div class="mb-3">
-                			    <label class="form-label">Nome de Usuário</label>
-                			    <input type="text" 
-                       			    name="username" 
-                       		 	    class="form-control" 
-                       			    pattern="[a-zA-Z0-9._-]+"
-                                                title="Apenas letras, números, ponto, hífen e underscore. Sem espaços!"required>
-                			    <div class="form-text">
-                    		        <i class="bi bi-info-circle"></i> Usado para fazer login no sistema (sem espaços)
-                			    </div>
-            			</div>
 
                         <div class="mb-3">
-                            <label class="form-label">Senha</label>
-                            <input type="password" 
-                                   name="password" 
-                                   class="form-control" 
-                                   placeholder="Digite uma senha forte"
-                                   required>
+                            <label class="form-label">{{ form.username.label }} <span class="text-danger">*</span></label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                            {% endif %}
+                            {% if not editando %}
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> {{ form.username.help_text }}
+                            </div>
+                            {% endif %}
                         </div>
 
+                        {% if editando %}
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" 
-                                       type="checkbox" 
-                                       name="is_staff" 
-                                       id="is_staff">
-                                <label class="form-check-label" for="is_staff">
-                                    <strong>Tornar Administrador</strong>
+                                {{ form.resetar_senha }}
+                                <label class="form-check-label" for="id_resetar_senha">
+                                    <strong>{{ form.resetar_senha.label }}</strong>
                                 </label>
                                 <div class="form-text">
-                                    <i class="bi bi-shield-check"></i> Administradores têm acesso ao painel admin e gerenciamento de usuários
+                                    <i class="bi bi-info-circle"></i> {{ form.resetar_senha.help_text }}
                                 </div>
                             </div>
                         </div>
-
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <strong>Atenção:</strong> Anote a senha, pois não será possível recuperá-la depois!
+                        <div class="mb-3" id="campo-senha" style="display: none;">
+                            <label class="form-label">{{ form.password.label }}</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                            <div class="text-danger small">{{ form.password.errors }}</div>
+                            {% endif %}
                         </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.password.label }} <span class="text-danger">*</span></label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                            <div class="text-danger small">{{ form.password.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">{{ form.nome_completo.label }}</label>
+                                {{ form.nome_completo }}
+                                {% if form.nome_completo.errors %}
+                                <div class="text-danger small">{{ form.nome_completo.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ form.cargo.label }}</label>
+                                {{ form.cargo }}
+                                {% if form.cargo.errors %}
+                                <div class="text-danger small">{{ form.cargo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {% if not usuario_edit.is_superuser %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_staff }}
+                                <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                                    <strong>{{ form.is_staff.label }}</strong>
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if not editando %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            O usuário precisará trocar a senha no primeiro acesso.
+                        </div>
+                        {% endif %}
 
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{% url 'usuarios_list' %}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Voltar
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Criar Usuário
+                                <i class="bi bi-check-circle"></i> {% if editando %}Salvar{% else %}Criar Usuário{% endif %}
                             </button>
                         </div>
                     </form>
@@ -70,4 +115,28 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if editando %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('id_resetar_senha');
+    const campoSenha = document.getElementById('campo-senha');
+    const inputSenha = campoSenha.querySelector('input');
+
+    function toggle() {
+        campoSenha.style.display = checkbox.checked ? 'block' : 'none';
+        if (!checkbox.checked) inputSenha.value = '';
+    }
+
+    checkbox.addEventListener('change', toggle);
+
+    {% if form.resetar_senha.value %}
+    checkbox.checked = true;
+    toggle();
+    {% endif %}
+});
+</script>
+{% endif %}
 {% endblock %}

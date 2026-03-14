@@ -1,5 +1,6 @@
 from django import forms
-from .models import Pessoa, Documento, Beneficio
+from .models import Pessoa, Documento, Beneficio, User
+#from django.contrib.auth.password_validation import validate_password (caso decida verificar força de senha na criação do user)
 
 def validar_pdf_real(arquivo):
     """Valida se o arquivo é realmente um PDF (magic bytes)"""
@@ -153,3 +154,101 @@ class DocumentoForm(forms.ModelForm):
                 raise forms.ValidationError('Arquivo inválido. Envie um PDF verdadeiro.')
         
         return arquivo
+
+
+class UsuarioCreateForm(forms.ModelForm):
+    password = forms.CharField(
+        label='Senha',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Digite uma senha forte'}),
+    )
+
+    class Meta:
+        model = User
+        fields = ['username', 'nome_completo', 'email', 'cargo', 'is_staff']
+        labels = {
+            'username': 'Usuário',
+            'is_staff': 'Tornar Administrador',
+        }
+        help_texts = {
+            'username': 'Usado para fazer login no sistema (sem espaços)',
+        }
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'form-control',
+                'pattern': r'[a-zA-Z0-9._-]+',
+                'title': 'Apenas letras, números, ponto, hífen e underscore. Sem espaços!',
+            }),
+            'nome_completo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo do usuário'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemplo.com'}),
+            'cargo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Assistente Social'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if ' ' in username:
+            raise forms.ValidationError('Nome de usuário não pode conter espaços!')
+        return username
+
+    # caso decida verificar força de senha na criação do user
+    #def clean_password(self):
+        #password = self.cleaned_data['password']
+        #validate_password(password)
+        #return password
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password'])
+        user.is_superuser = False
+        user.must_change_password = True
+        if commit:
+            user.save()
+        return user
+
+class UsuarioEditForm(forms.ModelForm):
+    resetar_senha = forms.BooleanField(
+        required=False,
+        label='Resetar senha',
+        help_text='O usuário precisará trocar a senha no primeiro acesso.',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_resetar_senha'}),
+    )
+    password = forms.CharField(
+        required=False,
+        label='Nova Senha',
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Digite a nova senha temporária'}),
+    )
+
+    class Meta:
+        model = User
+        fields = ['username', 'nome_completo', 'email', 'cargo', 'is_staff']
+        labels = {
+            'username': 'Usuário',
+            'is_staff': 'Administrador',
+        }
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
+            'nome_completo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo do usuário'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemplo.com'}),
+            'cargo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Assistente Social'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_username(self):
+        return self.instance.username
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('resetar_senha'):
+            password = cleaned_data.get('password')
+            if not password:
+                self.add_error('password', 'Informe a nova senha ao resetar.')
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if self.cleaned_data.get('resetar_senha'):
+            user.set_password(self.cleaned_data['password'])
+            user.must_change_password = True
+        if commit:
+            user.save()
+        return user

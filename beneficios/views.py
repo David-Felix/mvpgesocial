@@ -8,7 +8,7 @@ from django.core.paginator import Paginator, EmptyPage
 from .models import Pessoa, Beneficio, Documento, Memorando, MemorandoPessoa
 from .services import registrar_memorando
 from .utils import registrar_log_acao
-from .forms import PessoaForm, DocumentoForm
+from .forms import PessoaForm, DocumentoForm, UsuarioCreateForm, UsuarioEditForm
 from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -549,33 +549,54 @@ def usuario_create(request):
     if not request.user.is_staff:
         messages.error(request, 'Você não tem permissão para acessar esta área!')
         return redirect('dashboard')
-    
+
     if request.method == 'POST':
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password')
-        is_staff = request.POST.get('is_staff') == 'on'
-        
-        # Validações
-        if not username or not password:
-            messages.error(request, 'Usuário e senha são obrigatórios!')
-        elif ' ' in username:
-            messages.error(request, 'Nome de usuário não pode conter espaços!')
-        elif User.objects.filter(username=username).exists():
-            messages.error(request, f'Usuário {username} já existe!')
-        else:
-            user = User.objects.create_user(username=username, password=password)
-            user.is_staff = is_staff
-            user.is_superuser = False
-            user.save()
-            
-            tipo = 'Administrador' if is_staff else 'Usuário'
-            messages.success(request, f'{tipo} {username} criado com sucesso!')
+        form = UsuarioCreateForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            tipo = 'Administrador' if user.is_staff else 'Usuário'
+            messages.success(request, f'{tipo} {user.username} criado com sucesso!')
             return redirect('usuarios_list')
-    
-    return render(request, 'beneficios/usuario_form.html', {'titulo': 'Novo Usuário'})
+    else:
+        form = UsuarioCreateForm()
+
+    return render(request, 'beneficios/usuario_form.html', {'titulo': 'Novo Usuário', 'form': form})
+
+@login_required
+def usuario_edit(request, pk):
+    """Editar usuário existente (apenas para admins)"""
+    if not request.user.is_staff:
+        messages.error(request, 'Você não tem permissão para acessar esta área!')
+        return redirect('dashboard')
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    usuario = get_object_or_404(User, pk=pk)
+
+    if usuario.is_superuser and not request.user.is_superuser:
+        messages.error(request, 'Não é possível editar um Super Admin!')
+        return redirect('usuarios_list')
+
+    if usuario == request.user:
+        messages.error(request, 'Use "Meu Perfil" para editar seus próprios dados!')
+        return redirect('usuarios_list')
+
+    if request.method == 'POST':
+        form = UsuarioEditForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Usuário {usuario.username} atualizado com sucesso!')
+            return redirect('usuarios_list')
+    else:
+        form = UsuarioEditForm(instance=usuario)
+
+    context = {
+        'titulo': 'Editar Usuário',
+        'form': form,
+        'editando': True,
+        'usuario_edit': usuario,
+    }
+    return render(request, 'beneficios/usuario_form.html', context)
 
 @login_required
 def usuario_toggle_staff(request, pk):
@@ -1011,8 +1032,8 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.4.2',
-        'data_compilacao': '10/03/2026',
+        'versao': '1.5.2',
+        'data_compilacao': '14/03/2026',
         'total_usuarios': '10',
         'total_programas': '2',
     }
@@ -1681,6 +1702,7 @@ def backup_config(request):
         if acao == 'salvar_config':
             config.rclone_nome_remote = request.POST.get('rclone_nome_remote', '').strip() or 'DRIVE'
             config.rclone_pasta = request.POST.get('rclone_pasta', '').strip() or 'BackupGESOCIAL'
+            config.email_conta = request.POST.get('email_conta', '').strip()
             
             config.agendamento_db_ativo = request.POST.get('agendamento_db_ativo') == 'on'
             config.horario_db = request.POST.get('horario_db', '03:00')

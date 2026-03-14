@@ -60,15 +60,11 @@
                             <td class="text-end">
                                 {% if usuario != user %}
                                 <div class="btn-group" role="group">
-                                    {% if not usuario.is_superuser %}
-                                    <a href="{% url 'usuario_toggle_staff' usuario.pk %}" 
-                                       class="btn btn-sm btn-outline-warning"
-                                       onclick="return confirm('Alterar tipo de usuário?')"
-                                       title="{% if usuario.is_staff %}Tornar Usuário{% else %}Tornar Admin{% endif %}">
-                                        <i class="bi bi-arrow-repeat"></i>
-                                    </a>
-                                    {% endif %}
-                                    
+                                    <a href="{% url 'usuario_edit' usuario.pk %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>      
                                     {% if usuario.is_active %}
                                     <a href="{% url 'usuario_toggle_active' usuario.pk %}" 
                                        class="btn btn-sm btn-outline-danger"
