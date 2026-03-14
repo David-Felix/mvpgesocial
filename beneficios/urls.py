@@ -67,5 +67,9 @@ urlpatterns = [
     # Senha
     path('trocar-senha/', views.trocar_senha, name='trocar_senha'),
 
+    # Backup
+    path('backup/config/', views.backup_config, name='backup_config'),
+    path('backup/logs/', views.backup_logs, name='backup_logs'),
+
 
 ]

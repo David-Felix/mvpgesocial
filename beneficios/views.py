@@ -13,9 +13,9 @@ from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from decimal import Decimal
+import subprocess
+import sys
 import os
-
-
 
 @login_required
 def dashboard(request):
@@ -1627,3 +1627,199 @@ def auditoria(request):
         }
     }
     return render(request, 'beneficios/auditoria.html', context)
+
+def _atualizar_cron(config):
+    """Atualiza a crontab do www-data com os agendamentos"""
+    from crontab import CronTab
+    
+    cron = CronTab(user=True)
+    cron.remove_all(comment='gesocial_backup_db')
+    cron.remove_all(comment='gesocial_backup_doc')
+    
+    if config.agendamento_db_ativo:
+        comando = (
+            'cd /var/www/sistema_beneficios && '
+            '/var/www/sistema_beneficios/venv/bin/python manage.py executar_backup '
+            '--tipo-backup banco --tipo automatico '
+            '>> /var/log/gesocial_backup.log 2>&1'
+        )
+        job = cron.new(command=comando, comment='gesocial_backup_db')
+        job.hour.on(config.horario_db.hour)
+        job.minute.on(config.horario_db.minute)
+        if config.frequencia_db == 'semanal':
+            job.dow.on(0)
+    
+    if config.agendamento_doc_ativo:
+        comando = (
+            'cd /var/www/sistema_beneficios && '
+            '/var/www/sistema_beneficios/venv/bin/python manage.py executar_backup '
+            '--tipo-backup documentos --tipo automatico '
+            '>> /var/log/gesocial_backup.log 2>&1'
+        )
+        job = cron.new(command=comando, comment='gesocial_backup_doc')
+        job.hour.on(config.horario_doc.hour)
+        job.minute.on(config.horario_doc.minute)
+        if config.frequencia_doc == 'semanal':
+            job.dow.on(0)
+    
+    cron.write()
+
+
+@login_required
+def backup_config(request):
+    """Configuração e execução de backup (Super Admin apenas)"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Acesso restrito ao Super Admin!')
+        return redirect('dashboard')
+    
+    from .models import BackupConfig, BackupHistorico
+    config = BackupConfig.get_config()
+    
+    if request.method == 'POST':
+        acao = request.POST.get('acao', '')
+        
+        if acao == 'salvar_config':
+            config.rclone_nome_remote = request.POST.get('rclone_nome_remote', '').strip() or 'DRIVE'
+            config.rclone_pasta = request.POST.get('rclone_pasta', '').strip() or 'BackupGESOCIAL'
+            
+            config.agendamento_db_ativo = request.POST.get('agendamento_db_ativo') == 'on'
+            config.horario_db = request.POST.get('horario_db', '03:00')
+            config.frequencia_db = request.POST.get('frequencia_db', 'diario')
+            config.versoes_nuvem_db = int(request.POST.get('versoes_nuvem_db', 5))
+            config.versoes_local_db = int(request.POST.get('versoes_local_db', 5))
+            
+            config.agendamento_doc_ativo = request.POST.get('agendamento_doc_ativo') == 'on'
+            config.horario_doc = request.POST.get('horario_doc', '04:00')
+            config.frequencia_doc = request.POST.get('frequencia_doc', 'semanal')
+            config.versoes_nuvem_doc = int(request.POST.get('versoes_nuvem_doc', 3))
+            config.versoes_local_doc = int(request.POST.get('versoes_local_doc', 3))
+            
+            config.save()
+            config.refresh_from_db()
+            
+            if not _validar_horarios_backup(config):
+                messages.error(request, 'Os horários de backup devem ter pelo menos 30 minutos de diferença!')
+                return redirect('backup_config')
+            
+            try:
+                _atualizar_cron(config)
+                messages.success(request, 'Configurações de backup salvas!')
+            except Exception as e:
+                messages.warning(request, f'Configurações salvas, mas erro ao atualizar agendamento: {str(e)}')
+            
+            return redirect('backup_config')
+        
+        elif acao == 'executar':
+            if BackupHistorico.objects.filter(status='executando').exists():
+                messages.warning(request, 'Já existe um backup em execução!')
+                return redirect('backup_config')
+            
+            tipo_backup = request.POST.get('tipo_backup', '')
+            if tipo_backup not in ('banco', 'documentos'):
+                messages.error(request, 'Selecione o tipo de backup!')
+                return redirect('backup_config')
+            
+            label = 'Banco de Dados' if tipo_backup == 'banco' else 'Documentos'
+            
+            backup = BackupHistorico.objects.create(
+                tipo='manual',
+                tipo_backup=tipo_backup,
+                itens=tipo_backup,
+                status='executando',
+                arquivo_nome='',
+                usuario=request.user,
+            )
+            
+            subprocess.Popen(
+                [
+                    sys.executable, 'manage.py', 'executar_backup',
+                    '--backup-id', str(backup.id),
+                    '--tipo-backup', tipo_backup,
+                    '--tipo', 'manual',
+                ],
+                cwd='/var/www/sistema_beneficios',
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            
+            messages.success(request, f'Backup de {label} iniciado! Acompanhe nos logs.')
+            return redirect('backup_logs')
+        
+        elif acao == 'testar_rclone':
+            try:
+                result = subprocess.run(
+                    ['rclone', 'about', config.rclone_destino],
+                    capture_output=True, text=True, timeout=15
+                )
+                if result.returncode == 0:
+                    messages.success(request, f'Conexão com {config.rclone_destino} OK!')
+                else:
+                    messages.error(request, f'Erro rclone: {result.stderr}')
+            except subprocess.TimeoutExpired:
+                messages.error(request, 'Timeout ao testar conexão.')
+            except Exception as e:
+                messages.error(request, f'Erro ao testar: {str(e)}')
+            return redirect('backup_config')
+    
+    rclone_ok = None
+    
+    executando = BackupHistorico.objects.filter(status='executando').exists()
+    
+    context = {
+        'config': config,
+        'rclone_ok': rclone_ok,
+        'executando': executando,
+    }
+    return render(request, 'beneficios/backup_config.html', context)
+
+
+@login_required
+def backup_logs(request):
+    """Logs de backup (Super Admin e Admin)"""
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
+        return redirect('dashboard')
+    
+    from .models import BackupHistorico
+    
+    backups = BackupHistorico.objects.prefetch_related('logs').order_by('-data_inicio')
+    
+    f_status = request.GET.get('status', '').strip()
+    f_tipo = request.GET.get('tipo', '').strip()
+    f_tipo_backup = request.GET.get('tipo_backup', '').strip()
+    
+    if f_status:
+        backups = backups.filter(status=f_status)
+    if f_tipo:
+        backups = backups.filter(tipo=f_tipo)
+    if f_tipo_backup:
+        backups = backups.filter(tipo_backup=f_tipo_backup)
+    
+    paginator = Paginator(backups, 15)
+    page_number = request.GET.get('page', 1)
+    backups_page = paginator.get_page(page_number)
+    
+    executando = BackupHistorico.objects.filter(status='executando').exists()
+    
+    context = {
+        'backups': backups_page,
+        'executando': executando,
+        'filtros': {
+            'status': f_status,
+            'tipo': f_tipo,
+            'tipo_backup': f_tipo_backup,
+        }
+    }
+    return render(request, 'beneficios/backup_logs.html', context)
+
+def _validar_horarios_backup(config):
+    """Valida diferença mínima de 30 minutos entre agendamentos"""
+    if not config.agendamento_db_ativo or not config.agendamento_doc_ativo:
+        return True
+    
+    min_db = config.horario_db.hour * 60 + config.horario_db.minute
+    min_doc = config.horario_doc.hour * 60 + config.horario_doc.minute
+    diferenca = abs(min_db - min_doc)
+    diferenca = min(diferenca, 1440 - diferenca)
+    
+    return diferenca >= 30

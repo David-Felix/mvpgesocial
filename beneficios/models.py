@@ -277,6 +277,137 @@ class LogAcao(models.Model):
         return f"{self.usuario} - {self.get_tipo_display()} - {self.created_at}"
 
 
+class BackupConfig(models.Model):
+    """Configurações de backup do sistema (singleton)"""
+    FREQUENCIA_CHOICES = [
+        ('diario', 'Diário'),
+        ('semanal', 'Semanal'),
+    ]
+    
+    # Google Drive
+    rclone_nome_remote = models.CharField(max_length=100, default='DRIVE', verbose_name='Nome do remote')
+    rclone_pasta = models.CharField(max_length=200, default='BackupGESOCIAL', verbose_name='Pasta de destino')
+    
+    # Backup Banco de Dados
+    agendamento_db_ativo = models.BooleanField(default=False, verbose_name='Agendar backup do banco')
+    horario_db = models.TimeField(default='03:00', verbose_name='Horário (Banco)')
+    frequencia_db = models.CharField(max_length=10, choices=FREQUENCIA_CHOICES, default='diario', verbose_name='Frequência (Banco)')
+    versoes_nuvem_db = models.PositiveIntegerField(default=5, verbose_name='Versões nuvem (Banco)')
+    versoes_local_db = models.PositiveIntegerField(default=5, verbose_name='Versões locais (Banco)')
+    
+    # Backup Documentos
+    agendamento_doc_ativo = models.BooleanField(default=False, verbose_name='Agendar backup de documentos')
+    horario_doc = models.TimeField(default='04:00', verbose_name='Horário (Documentos)')
+    frequencia_doc = models.CharField(max_length=10, choices=FREQUENCIA_CHOICES, default='semanal', verbose_name='Frequência (Documentos)')
+    versoes_nuvem_doc = models.PositiveIntegerField(default=3, verbose_name='Versões nuvem (Documentos)')
+    versoes_local_doc = models.PositiveIntegerField(default=3, verbose_name='Versões locais (Documentos)')
+    
+    class Meta:
+        verbose_name = 'Configuração de Backup'
+        verbose_name_plural = 'Configurações de Backup'
+    
+    @property
+    def rclone_destino(self):
+        nome = self.rclone_nome_remote.strip().rstrip(':')
+        pasta = self.rclone_pasta.strip().strip('/')
+        return f'{nome}:{pasta}'
+    
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_config(cls):
+        config, _ = cls.objects.get_or_create(pk=1)
+        return config
+    
+    def __str__(self):
+        return 'Configuração de Backup'
+
+
+class BackupHistorico(models.Model):
+    """Registro de cada execução de backup"""
+    TIPO_CHOICES = [
+        ('manual', 'Manual'),
+        ('automatico', 'Automático'),
+    ]
+    STATUS_CHOICES = [
+        ('executando', 'Executando'),
+        ('sucesso', 'Sucesso'),
+        ('erro', 'Erro'),
+    ]
+    TIPO_BACKUP_CHOICES = [
+        ('banco', 'Banco de Dados'),
+        ('documentos', 'Documentos'),
+    ]
+    
+    data_inicio = models.DateTimeField(auto_now_add=True)
+    data_fim = models.DateTimeField(null=True, blank=True)
+    tipo = models.CharField(max_length=15, choices=TIPO_CHOICES)
+    tipo_backup = models.CharField(max_length=15, choices=TIPO_BACKUP_CHOICES, default='banco')
+    tamanho_bytes = models.BigIntegerField(null=True, blank=True)
+    itens = models.CharField(max_length=100, verbose_name='Itens incluídos')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='executando')
+    arquivo_nome = models.CharField(max_length=200, blank=True, default='')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Histórico de Backup'
+        verbose_name_plural = 'Históricos de Backup'
+        ordering = ['-data_inicio']
+    
+    def __str__(self):
+        return f'{self.arquivo_nome} - {self.get_status_display()}'
+    
+    @property
+    def tamanho_formatado(self):
+        if not self.tamanho_bytes:
+            return '-'
+        if self.tamanho_bytes < 1024:
+            return f'{self.tamanho_bytes} B'
+        elif self.tamanho_bytes < 1024 * 1024:
+            return f'{self.tamanho_bytes / 1024:.1f} KB'
+        elif self.tamanho_bytes < 1024 * 1024 * 1024:
+            return f'{self.tamanho_bytes / (1024 * 1024):.1f} MB'
+        else:
+            return f'{self.tamanho_bytes / (1024 * 1024 * 1024):.2f} GB'
+
+class BackupLog(models.Model):
+    """Log detalhado de cada etapa do backup"""
+    ETAPA_CHOICES = [
+        ('inicio', 'Início'),
+        ('dump_banco', 'Dump do Banco'),
+        ('compactar_docs', 'Compactar Documentos'),
+        ('compactar_configs', 'Compactar Configurações'),
+        ('comprimir', 'Comprimir (zstd)'),
+        ('criptografar', 'Criptografar (GPG)'),
+        ('copiar_local', 'Copiar Local'),
+        ('enviar', 'Enviar Google Drive'),
+        ('retencao_nuvem', 'Retenção Nuvem'),
+        ('retencao_local', 'Retenção Local'),
+        ('limpar', 'Limpeza Temporários'),
+        ('fim', 'Finalização'),
+    ]
+    STATUS_CHOICES = [
+        ('executando', 'Executando'),
+        ('sucesso', 'Sucesso'),
+        ('erro', 'Erro'),
+    ]
+    
+    backup = models.ForeignKey(BackupHistorico, on_delete=models.CASCADE, related_name='logs')
+    etapa = models.CharField(max_length=30, choices=ETAPA_CHOICES)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES)
+    mensagem = models.TextField(blank=True, default='')
+    data = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Log de Backup'
+        verbose_name_plural = 'Logs de Backup'
+        ordering = ['data']
+    
+    def __str__(self):
+        return f'{self.get_etapa_display()} - {self.get_status_display()}'
+        
 # Registrar models no auditlog
 auditlog.register(User)
 auditlog.register(Beneficio)

@@ -98,10 +98,25 @@
                 <i class="bi bi-sliders"></i> Configurações Gerais
             </a>
             {% endif %}
-            {% if user.is_staff %}
-            <a class="nav-link" href="#"> 
+            {% if user.is_superuser %}
+            <!-- Submenu Backup -->
+            <a class="nav-link" data-bs-toggle="collapse" href="#submenuBackup" role="button" aria-expanded="false">
                 <i class="bi bi-cloud-upload"></i> Backup
             </a>
+            <div class="collapse" id="submenuBackup">
+                <div class="ps-4">
+                    {% if user.is_superuser %}
+                    <a class="nav-link" href="{% url 'backup_config' %}">
+                        <i class="bi bi-gear"></i> Configuração
+                    </a>
+                    {% endif %}
+                    {% if user.is_staff %}
+                    <a class="nav-link" href="{% url 'backup_logs' %}">
+                        <i class="bi bi-journal-text"></i> Logs de Backup
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
             {% endif %}     
             <hr>
             <a class="nav-link" href="{% url 'sobre' %}"> 
