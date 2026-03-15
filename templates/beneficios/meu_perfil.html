@@ -1,0 +1,66 @@
+{% extends 'beneficios/base.html' %}
+{% load static %}
+{% block title %}Meu Perfil - GeSocial{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <!-- Cabeçalho do perfil -->
+            <div class="card form-panel mb-4">
+                <div class="card-header">
+                    <i class="bi bi-person"></i> Meu Perfil
+                </div>
+                <div class="card-body">
+                    <div class="perfil-header text-center">
+                        <div class="perfil-avatar mx-auto">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        {% if user.nome_completo %}
+                        <h5 class="perfil-nome mt-3 mb-1">{{ user.nome_completo }}</h5>
+                        {% endif %}
+                        <span class="perfil-username text-muted">
+                            <i class="bi bi-at"></i>{{ user.username }}
+                        </span>
+                    </div>
+
+                    <hr>
+
+                    <!-- Formulário editável -->
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.cargo.label }}</label>
+                                {{ form.cargo }}
+                                {% if form.cargo.errors %}
+                                <div class="text-danger small">{{ form.cargo.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

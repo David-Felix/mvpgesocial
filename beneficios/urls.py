@@ -27,9 +27,11 @@ urlpatterns = [
     # Gerenciamento de Usuários
     path('usuarios/', views.usuarios_list, name='usuarios_list'),
     path('usuarios/novo/', views.usuario_create, name='usuario_create'),
-    path('usuarios/<int:pk>/toggle-staff/', views.usuario_toggle_staff, name='usuario_toggle_staff'),
     path('usuarios/<int:pk>/toggle-active/', views.usuario_toggle_active, name='usuario_toggle_active'),
     path('usuarios/<int:pk>/editar/', views.usuario_edit, name='usuario_edit'),
+
+    # Perfil
+    path('perfil/', views.meu_perfil, name='meu_perfil'),
     
     # Listagem por beneficio
     path('beneficio/<int:beneficio_id>/pessoas/', views.pessoas_por_beneficio, name='pessoas_por_beneficio'),

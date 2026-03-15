@@ -78,7 +78,7 @@
                         <tr>
                             <td><strong>{{ memorando.numero }}</strong></td>
                             <td>{{ memorando.created_at|date:"d/m/Y H:i" }}</td>
-                            <td>{{ memorando.beneficio.nome }}</td>
+                            <td>{{ memorando.beneficio_nome }}</td>
                             <td>{{ memorando.quantidade_pessoas }}</td>
                             <td>R$ {{ memorando.valor_total|floatformat:2 }}</td>
                             <td>{{ memorando.conta_pagadora|default:"-" }}</td>

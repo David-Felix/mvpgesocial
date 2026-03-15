@@ -11,6 +11,12 @@ class User(AbstractUser):
     cargo = models.CharField(max_length=100, blank=True, default='', verbose_name='Cargo')
     history = AuditlogHistoryField()
 
+    @property
+    def primeiro_nome(self):
+        if self.nome_completo:
+            return self.nome_completo.split()[0]
+        return self.username
+
 class Beneficio(models.Model):
     """Tipos de benefícios: Auxílio Transporte e Renda Solidária"""
     ICONE_CHOICES = [
@@ -122,7 +128,8 @@ class Memorando(models.Model):
     numero = models.CharField(max_length=12, unique=True)  # 00001/2026
     ano = models.PositiveIntegerField()
     sequencia = models.PositiveIntegerField()
-    beneficio = models.ForeignKey(Beneficio, on_delete=models.PROTECT)
+    beneficio = models.ForeignKey(Beneficio, on_delete=models.SET_NULL, null=True, blank=True)
+    beneficio_nome = models.CharField(max_length=100, blank=True, default='')
     conta_pagadora = models.CharField(max_length=200, blank=True)
     valor_total = models.DecimalField(max_digits=12, decimal_places=2)
     quantidade_pessoas = models.PositiveIntegerField()

@@ -558,3 +558,65 @@
     align-items: center;
     justify-content: center;
 }
+
+/* ========== MEU PERFIL ========== */
+.perfil-header {
+    padding: 1rem 0;
+}
+
+.perfil-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a7cff 0%, #5a8cff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.2rem;
+}
+
+.perfil-nome {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.perfil-username {
+    font-size: 0.85rem;
+}
+
+
+/* ========== BACKUP CONFIG ========== */
+.backup-separator {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.backup-type-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* ========== INDICADOR NOVO ========== */
+.novo-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e67e22;
+    margin-left: 6px;
+    vertical-align: middle;
+    animation: novo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes novo-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}

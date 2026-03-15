@@ -268,7 +268,7 @@ def gerar_memorando_segunda_via_pdf(memorando):
     styles = getSampleStyleSheet()
     style_intro = ParagraphStyle('Intro', parent=styles['Normal'], fontName='Helvetica', fontSize=11, leading=14, alignment=TA_JUSTIFY)
     
-    beneficio = memorando.beneficio
+    beneficio_nome = memorando.beneficio_nome or (memorando.beneficio.nome if memorando.beneficio else '')
     pessoas = list(memorando.pessoas.all().order_by('ordem'))
     
     def desenhar_cabecalho_pagina():
@@ -417,7 +417,7 @@ def gerar_memorando_segunda_via_pdf(memorando):
         y_text = y_atual - 0.5 * cm
         c.drawCentredString(col_x_starts[0] + col_widths[0]/2, y_text, str(idx))
         c.drawCentredString(col_x_starts[1] + col_widths[1]/2, y_text, pessoa_snap.nome_completo[:38])
-        c.drawCentredString(col_x_starts[2] + col_widths[2]/2, y_text, beneficio.nome[:38])
+        c.drawCentredString(col_x_starts[2] + col_widths[2]/2, y_text, beneficio_nome[:38])
         c.drawCentredString(col_x_starts[3] + col_widths[3]/2, y_text, valor_fmt)
         c.drawCentredString(col_x_starts[4] + col_widths[4]/2, y_text, str(conta)[:12])
         

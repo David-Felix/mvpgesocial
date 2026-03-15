@@ -252,3 +252,12 @@ class UsuarioEditForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+class MeuPerfilForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['email', 'cargo']
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemplo.com'}),
+            'cargo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Assistente Social'}),
+        }

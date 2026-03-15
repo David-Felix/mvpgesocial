@@ -8,7 +8,7 @@ from django.core.paginator import Paginator, EmptyPage
 from .models import Pessoa, Beneficio, Documento, Memorando, MemorandoPessoa
 from .services import registrar_memorando
 from .utils import registrar_log_acao
-from .forms import PessoaForm, DocumentoForm, UsuarioCreateForm, UsuarioEditForm
+from .forms import PessoaForm, DocumentoForm, UsuarioCreateForm, UsuarioEditForm, MeuPerfilForm
 from django.db.models import Q, F, Sum, Func, Value, CharField, Count
 from django.contrib.staticfiles import finders
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -16,6 +16,8 @@ from decimal import Decimal
 import subprocess
 import sys
 import os
+
+LIMITE_BENEFICIOS = 2
 
 @login_required
 def dashboard(request):
@@ -34,6 +36,7 @@ def dashboard(request):
             total_pessoas=Count('id'),
             ativos=Count('id', filter=Q(status='ativo')),
             desativados=Count('id', filter=Q(status='desligado')),
+            em_espera=Count('id', filter=Q(status='em_espera')),
             valor_mensal=Sum('valor_beneficio', filter=Q(status='ativo'))
         )
         
@@ -50,6 +53,7 @@ def dashboard(request):
             'total': stats['total_pessoas'],
             'ativos': stats['ativos'],
             'desativados': stats['desativados'],
+            'em_espera': stats['em_espera'],
             'valor_mensal': float(valor_mensal),
             'valor_mensal_formatado': valor_mensal_formatado,
         })
@@ -461,6 +465,8 @@ def beneficios_list(request):
     
     context = {
         'beneficios': beneficios,
+        'total_beneficios': Beneficio.objects.count(),
+        'limite_beneficios': LIMITE_BENEFICIOS,
     }
     return render(request, 'beneficios/beneficios_list.html', context)
 
@@ -470,19 +476,27 @@ def beneficio_create(request):
     if not request.user.is_staff:
         messages.error(request, 'Acesso restrito a administradores!')
         return redirect('dashboard')
+
+    if Beneficio.objects.count() >= LIMITE_BENEFICIOS:
+        messages.error(request, f'Limite de {LIMITE_BENEFICIOS} benefícios atingido. Entre em contato com o suporte.')
+        return redirect('beneficios_list')
+
     if request.method == 'POST':
         nome = request.POST.get('nome')
         conta_pagadora = request.POST.get('conta_pagadora', '')
         icone = request.POST.get('icone', 'bi-wallet2')
         descricao = request.POST.get('descricao', '')
-        
+
         if nome:
+            if Beneficio.objects.count() >= LIMITE_BENEFICIOS:
+                messages.error(request, f'Limite de {LIMITE_BENEFICIOS} benefícios atingido.')
+                return redirect('beneficios_list')
             Beneficio.objects.create(nome=nome, descricao=descricao, conta_pagadora=conta_pagadora, icone=icone)
             messages.success(request, f'Benefício {nome} criado com sucesso!')
             return redirect('beneficios_list')
         else:
             messages.error(request, 'Nome do benefício é obrigatório!')
-    
+
     return render(request, 'beneficios/beneficio_form.html', {'titulo': 'Novo Benefício'})
 
 @login_required
@@ -597,32 +611,6 @@ def usuario_edit(request, pk):
         'usuario_edit': usuario,
     }
     return render(request, 'beneficios/usuario_form.html', context)
-
-@login_required
-def usuario_toggle_staff(request, pk):
-    """Alternar status de admin do usuário"""
-    if not request.user.is_staff:
-        messages.error(request, 'Você não tem permissão para acessar esta área!')
-        return redirect('dashboard')
-    
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    usuario = get_object_or_404(User, pk=pk)
-    
-    if usuario.is_superuser:
-        messages.error(request, 'Não é possível alterar um Super Admin!')
-        return redirect('usuarios_list')
-    
-    if usuario == request.user:
-        messages.error(request, 'Você não pode alterar suas próprias permissões!')
-        return redirect('usuarios_list')
-    
-    usuario.is_staff = not usuario.is_staff
-    usuario.save()
-    
-    tipo = 'Administrador' if usuario.is_staff else 'Usuário'
-    messages.success(request, f'{usuario.username} agora é {tipo}!')
-    return redirect('usuarios_list')
 
 @login_required
 def usuario_toggle_active(request, pk):
@@ -1032,8 +1020,8 @@ def sobre(request):
     User = get_user_model()
     
     context = {
-        'versao': '1.5.2',
-        'data_compilacao': '14/03/2026',
+        'versao': '1.6.5',
+        'data_compilacao': '15/03/2026',
         'total_usuarios': '10',
         'total_programas': '2',
     }
@@ -1668,7 +1656,7 @@ def _atualizar_cron(config):
         job.hour.on(config.horario_db.hour)
         job.minute.on(config.horario_db.minute)
         if config.frequencia_db == 'semanal':
-            job.dow.on(0)
+            job.dow.on(6)
     
     if config.agendamento_doc_ativo:
         comando = (
@@ -1681,7 +1669,7 @@ def _atualizar_cron(config):
         job.hour.on(config.horario_doc.hour)
         job.minute.on(config.horario_doc.minute)
         if config.frequencia_doc == 'semanal':
-            job.dow.on(0)
+            job.dow.on(6)
     
     cron.write()
 
@@ -1689,8 +1677,8 @@ def _atualizar_cron(config):
 @login_required
 def backup_config(request):
     """Configuração e execução de backup (Super Admin apenas)"""
-    if not request.user.is_superuser:
-        messages.error(request, 'Acesso restrito ao Super Admin!')
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso restrito a administradores!')
         return redirect('dashboard')
     
     from .models import BackupConfig, BackupHistorico
@@ -1770,11 +1758,25 @@ def backup_config(request):
         elif acao == 'testar_rclone':
             try:
                 result = subprocess.run(
-                    ['rclone', 'about', config.rclone_destino],
+                    ['rclone', 'about', '--json', config.rclone_destino],
                     capture_output=True, text=True, timeout=15
                 )
                 if result.returncode == 0:
-                    messages.success(request, f'Conexão com {config.rclone_destino} OK!')
+                    import json
+                    dados = json.loads(result.stdout)
+                    total = dados.get('total', 0)
+                    usado = dados.get('used', 0)
+                    livre = dados.get('free', 0)
+
+                    def fmt_gb(b):
+                        if b >= 1024 ** 3:
+                            return f'{b / (1024 ** 3):.1f} GB'
+                        elif b >= 1024 ** 2:
+                            return f'{b / (1024 ** 2):.1f} MB'
+                        return f'{b} B'
+
+                    info = f'Total: {fmt_gb(total)} | Usado: {fmt_gb(usado)} | Livre: {fmt_gb(livre)}'
+                    messages.success(request, f'Sucesso! — {info}')
                 else:
                     messages.error(request, f'Erro rclone: {result.stderr}')
             except subprocess.TimeoutExpired:
@@ -1845,3 +1847,17 @@ def _validar_horarios_backup(config):
     diferenca = min(diferenca, 1440 - diferenca)
     
     return diferenca >= 30
+
+@login_required
+def meu_perfil(request):
+    """Editar perfil do usuário logado"""
+    if request.method == 'POST':
+        form = MeuPerfilForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Perfil atualizado com sucesso!')
+            return redirect('meu_perfil')
+    else:
+        form = MeuPerfilForm(instance=request.user)
+
+    return render(request, 'beneficios/meu_perfil.html', {'form': form})

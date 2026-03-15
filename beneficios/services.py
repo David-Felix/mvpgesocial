@@ -41,6 +41,7 @@ def registrar_memorando(beneficio, pessoas_dados, usuario):
             ano=ano,
             sequencia=sequencia,
             beneficio=beneficio,
+            beneficio_nome=beneficio.nome,
             conta_pagadora=conta_pagadora,
             valor_total=valor_total,
             quantidade_pessoas=len(pessoas_dados),
